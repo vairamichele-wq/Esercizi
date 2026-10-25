@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL JOIN & WHERE Master Lab - 4ª AFM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080d1a;
+            color: #f1f5f9;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .slot-target {
+            min-width: 110px;
+            min-height: 40px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .slot-target.active {
+            border-color: #818cf8;
+            box-shadow: 0 0 18px rgba(129, 140, 248, 0.4);
+        }
+        .chip {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+        .chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+        .chip:active {
+            transform: translateY(0);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1329;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Regole di Stampa per Generazione Report / PDF Classroom */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            header, footer, .no-print {
+                display: none !important;
+            }
+            main {
+                display: block !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-only-container {
+                border: 2px solid #1e293b !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+                border-radius: 12px !important;
+                padding: 24px !important;
+            }
+            .print-only-container * {
+                color: #000000 !important;
+                background: transparent !important;
+                border-color: #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+            .print-only-container h1, 
+            .print-only-container h2, 
+            .print-only-container h3, 
+            .print-only-container #cert-student-name {
+                color: #0f172a !important;
+            }
+            .print-only-container .bg-slate-900,
+            .print-only-container .bg-slate-950,
+            .print-only-container .bg-slate-900\/80 {
+                background-color: #f8fafc !important;
+                border-color: #cbd5e1 !important;
+            }
+            .print-only-container ul li {
+                border-color: #cbd5e1 !important;
+                background-color: #f1f5f9 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+    <!-- Header Navigation -->
+    <header class="max-w-7xl w-full mx-auto bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-4 mb-6 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-3.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-filter-circle-dollar text-2xl"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg md:text-xl text-white tracking-wide">SQL JOIN & WHERE Master Lab</h1>
+                    <span class="bg-violet-500/20 text-violet-300 text-[10px] font-bold px-2.5 py-0.5 rounded border border-violet-500/30 font-mono-code uppercase">10 Schede 4ª AFM</span>
+                </div>
+                <p class="text-xs text-slate-400">Laboratorio Avanzato: Giunzioni Relazionali (JOIN) e Clausole di Filtro (WHERE)</p>
+            </div>
+        </div>
+
+        <!-- Progress Indicator & Score -->
+        <div class="flex items-center space-x-3 flex-wrap">
+            <div class="flex items-center space-x-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Scheda</span>
+                <span id="quiz-progress-text" class="font-bold text-indigo-400 font-mono-code text-lg">1 / 10</span>
+            </div>
+            <div class="flex items-center space-x-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Punteggio</span>
+                <span id="score-text" class="font-bold text-emerald-400 font-mono-code text-lg">0 pt</span>
+            </div>
+            <!-- Pulsante Scorciatoia Report PDF (attivo a fine percorso) -->
+            <button onclick="showCompletionModal()" id="header-report-btn" class="hidden px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2" title="Vai al Report Finale">
+                <i class="fa-solid fa-print"></i>
+                <span>Report PDF</span>
+            </button>
+            <button onclick="resetCurrentQuiz()" class="p-2.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition shadow" title="Ricomincia Scheda Corrente">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <!-- Left Column: Business Scenario & Source Tables (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+            
+            <!-- Scenario Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2 text-violet-400 font-semibold text-xs tracking-wider uppercase">
+                        <i class="fa-solid fa-bullseye"></i>
+                        <span>Obiettivo di Analisi</span>
+                    </div>
+                    <span id="join-type-badge" class="text-xs font-mono-code px-2.5 py-1 rounded-md bg-violet-500/20 text-violet-300 border border-violet-500/40 font-bold">Analisi Fatturato</span>
+                </div>
+                <h2 id="scenario-title" class="text-lg font-bold text-white mb-2">Caricamento scheda...</h2>
+                <p id="scenario-desc" class="text-slate-300 text-sm leading-relaxed">...</p>
+            </div>
+
+            <!-- Database Source Tables Preview -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2 text-slate-400 font-semibold text-xs tracking-wider uppercase">
+                        <i class="fa-solid fa-database text-indigo-400"></i>
+                        <span>Tabelle nel Database Aziendale</span>
+                    </div>
+                    <span class="text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono-code">PK 🔑 / FK 🔗</span>
+                </div>
+
+                <!-- Tables Container -->
+                <div id="db-tables-container" class="space-y-4 overflow-y-auto max-h-[420px] pr-1">
+                    <!-- Tables dynamically rendered here -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: SQL Query Builder, Palette & Feedback (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+            
+            <!-- SQL Editor Box -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                <!-- Editor Top Header & Color Legend -->
+                <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                        <span class="ml-2 text-xs font-mono-code text-slate-400">join_where_query.sql</span>
+                    </div>
+
+                    <!-- Syntax Legend -->
+                    <div class="flex items-center space-x-3 text-[11px] font-mono-code bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
+                        <span class="flex items-center gap-1 text-indigo-400 font-bold"><span class="w-2 h-2 rounded-full bg-indigo-400"></span>JOIN</span>
+                        <span class="flex items-center gap-1 text-emerald-400 font-bold"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>WHERE</span>
+                        <span class="flex items-center gap-1 text-purple-300 font-bold"><span class="w-2 h-2 rounded-full bg-purple-400"></span>Tabella</span>
+                        <span class="flex items-center gap-1 text-amber-300 font-semibold"><span class="w-2 h-2 rounded-full bg-amber-300"></span>Campo</span>
+                    </div>
+                </div>
+
+                <!-- Structured Code Construction Area -->
+                <div class="p-6 font-mono-code text-sm md:text-base leading-relaxed overflow-x-auto min-h-[220px] flex flex-col justify-center space-y-2 text-slate-200" id="query-builder-area">
+                    <!-- Dynamic Structured Query Lines & Slots -->
+                </div>
+
+                <!-- Action Button Bar -->
+                <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between gap-4">
+                    <button onclick="clearAllSlots()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        Azzera Tasselli
+                    </button>
+                    <button id="verify-btn" onclick="verifyAnswer()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i>
+                        Esegui Query SQL
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chips Palette -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-puzzle-piece text-violet-400"></i>
+                        Tasselli SQL Disponibili
+                    </h3>
+                    <span class="text-xs text-slate-500">Clicca un tassello per comporre la clausola</span>
+                </div>
+                
+                <div id="chips-palette" class="flex flex-wrap gap-2.5 min-h-[64px] p-3 bg-slate-950 rounded-xl border border-slate-800/80 items-center">
+                    <!-- Dynamic Chips -->
+                </div>
+            </div>
+
+            <!-- Feedback & Output Result Drawer -->
+            <div id="feedback-panel" class="hidden bg-slate-900 border rounded-2xl p-5 shadow-2xl transition-all">
+                <div class="flex items-start space-x-3">
+                    <div id="feedback-icon" class="p-3 rounded-xl text-xl flex-shrink-0 mt-0.5"></div>
+                    <div class="flex-grow">
+                        <h4 id="feedback-title" class="font-bold text-lg mb-1"></h4>
+                        <p id="feedback-text" class="text-sm text-slate-300 leading-relaxed mb-3"></p>
+                        
+                        <!-- Output Result Table -->
+                        <div id="result-table-box" class="hidden mt-4">
+                            <h5 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-table"></i>
+                                Risultato della Query (Record Filtrati e Giunti)
+                            </h5>
+                            <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                                <table class="w-full text-left text-xs text-slate-300">
+                                    <thead class="bg-slate-900 text-indigo-300 uppercase font-mono-code text-[11px]" id="result-table-head">
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/80 font-mono-code" id="result-table-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Next Button -->
+                        <div class="mt-5 flex justify-end">
+                            <button id="next-btn" onclick="nextQuestion()" class="hidden px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition items-center gap-2 text-sm">
+                                <span>Scheda Successiva</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl w-full mx-auto mt-6 text-center text-xs text-slate-500 py-3 border-t border-slate-800/60">
+        SQL JOIN & WHERE Master Lab — Percorso Interattivo di Database per la classe 4ª AFM (Amministrazione, Finanza e Marketing)
+    </footer>
+
+    <!-- Web Audio API Sound Synthesizer -->
+    <script>
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.08); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch(e) {
+                // Audio Context fallback
+            }
+        };
+    </script>
+
+    <!-- App Logic & 10 New JOIN + WHERE Cards Data -->
+    <script>
+        const joinWhereQuizData = [
+            {
+                id: 1,
+                title: "1. Selezione Fatture ad Alto Importo (> 5000 €)",
+                badge: "Contabilità Vendite",
+                desc: "L'ufficio contabilità deve selezionare la Ragione Sociale dei clienti e il numero di fattura per tutte le fatture aventi un Importo strettamente superiore a 5000 €.",
+                tip: "Unisci solo le anagrafiche che possiedono un corrispettivo nella tabella contabile e applica un filtro di confronto sul valore economico.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["IDCliente (PK 🔑)", "RagioneSociale", "Citta"],
+                        rows: [
+                            [1, "Alfa Spa", "Milano"],
+                            [2, "Beta Srl", "Roma"],
+                            [3, "Gamma Snc", "Torino"]
+                        ]
+                    },
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura (PK 🔑)", "IDCliente (FK 🔗)", "Importo"],
+                        rows: [
+                            [101, 1, "2500 €"],
+                            [102, 2, "8000 €"],
+                            [103, 1, "6200 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Clienti.RagioneSociale' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Fatture.NumFattura' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Fatture.Importo' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Clienti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: ['INNER JOIN', 'JOIN'] },
+                        { type: 'table', text: 'Fatture' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Clienti.IDCliente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Fatture.IDCliente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Fatture.Importo' },
+                        { type: 'slot', id: 's2', correct: '>' },
+                        { type: 'value', text: '5000' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['INNER JOIN', 'JOIN', '>', '<', 'LEFT JOIN', 'WHERE'],
+                resultOutput: {
+                    columns: ["RagioneSociale", "NumFattura", "Importo"],
+                    rows: [
+                        ["Beta Srl", 102, "8000 €"],
+                        ["Alfa Spa", 103, "6200 €"]
+                    ]
+                },
+                explanation: "Ottimo! La giunzione unisce i clienti con le fatture, e il filtro WHERE 'Fatture.Importo > 5000' esclude la fattura N°101 da 2500 €."
+            },
+            {
+                id: 2,
+                title: "2. Controllo Incassi Effettuati ('Saldato')",
+                badge: "Gestione Tesoreria",
+                desc: "Estrarre i clienti ed i relativi incassi registrati, ma filtrare solo i record il cui stato dell'incasso risulta essere esattamente 'Saldato'.",
+                tip: "Per mantenere la relazione cliente-incasso e poi selezionare una condizione di testo specifica, colloca l'uguaglianza nella clausola di filtraggio delle righe.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["IDCliente (PK 🔑)", "RagioneSociale"],
+                        rows: [
+                            [10, "Lombard Spa"],
+                            [20, "Veneto Srl"],
+                            [30, "Piemonte Snc"]
+                        ]
+                    },
+                    {
+                        name: "Incassi",
+                        columns: ["IDIncasso (PK 🔑)", "IDCliente (FK 🔗)", "Importo", "Stato"],
+                        rows: [
+                            [501, 10, "1500 €", "Saldato"],
+                            [502, 20, "3000 €", "In Attesa"],
+                            [503, 10, "4200 €", "Saldato"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Clienti.RagioneSociale' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Incassi.Importo' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Incassi.Stato' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Clienti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: 'LEFT JOIN' },
+                        { type: 'table', text: 'Incassi' },
+                        { type: 'slot', id: 's2', correct: 'ON' },
+                        { type: 'column', text: 'Clienti.IDCliente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Incassi.IDCliente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Incassi.Stato' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's3', correct: "'Saldato'" },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['LEFT JOIN', 'ON', "'Saldato'", 'INNER JOIN', 'WHERE', "'In Attesa'"],
+                resultOutput: {
+                    columns: ["RagioneSociale", "Importo", "Stato"],
+                    rows: [
+                        ["Lombard Spa", "1500 €", "Saldato"],
+                        ["Lombard Spa", "4200 €", "Saldato"]
+                    ]
+                },
+                explanation: "Perfetto! La condizione WHERE Incassi.Stato = 'Saldato' seleziona esclusivamente le transazioni effettivamente incassate."
+            },
+            {
+                id: 3,
+                title: "3. Filtro Commerciale Avanzato (Sede Milano e Ordini 2026)",
+                badge: "Filtri Multipli",
+                desc: "Selezionare i dati degli ordini emessi nell'anno 2026 (DataOrdine >= '2026-01-01') per i soli clienti appartenenti alla sede commerciale di 'Milano'.",
+                tip: "Quando occorre soddisfare due condizioni contemporaneamente (una sulla tabella anagrafica e una sulla tabella ordini), combina i criteri nel filtro finale.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["IDCliente (PK 🔑)", "RagioneSociale", "Sede"],
+                        rows: [
+                            [1, "Milano Moda Spa", "Milano"],
+                            [2, "Roma Commerce", "Roma"],
+                            [3, "Lombarda Tech", "Milano"]
+                        ]
+                    },
+                    {
+                        name: "Ordini",
+                        columns: ["NumOrdine (PK 🔑)", "IDCliente (FK 🔗)", "DataOrdine", "Totale"],
+                        rows: [
+                            [901, 1, "2026-02-10", "3400 €"],
+                            [902, 2, "2026-03-01", "1200 €"],
+                            [903, 3, "2025-11-20", "5000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Clienti.RagioneSociale' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Ordini.NumOrdine' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Ordini.Totale' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Clienti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: ['INNER JOIN', 'JOIN'] },
+                        { type: 'table', text: 'Ordini' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Clienti.IDCliente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Ordini.IDCliente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Clienti.Sede' },
+                        { type: 'text', text: " = 'Milano' " },
+                        { type: 'slot', id: 's2', correct: 'AND' },
+                        { type: 'column', text: ' Ordini.DataOrdine' },
+                        { type: 'text', text: " >= '2026-01-01';" }
+                    ]
+                ],
+                chips: ['INNER JOIN', 'AND', 'OR', 'LEFT JOIN', 'JOIN', 'WHERE'],
+                resultOutput: {
+                    columns: ["RagioneSociale", "NumOrdine", "Totale"],
+                    rows: [
+                        ["Milano Moda Spa", 901, "3400 €"]
+                    ]
+                },
+                explanation: "Esatto! Solo l'ordine N°901 soddisfa contemporaneamente la sede di Milano e la data successiva al 1° Gennaio 2026."
+            },
+            {
+                id: 4,
+                title: "4. Rilevazione Giacenze Inattive a Magazzino",
+                badge: "Analisi Magazzino",
+                desc: "Il responsabile di magazzino vuole un report sui prodotti a catalogo che NON sono mai stati inseriti in alcun dettaglio ordine (articoli invenduti).",
+                tip: "Mantieni tutti gli articoli a catalogo inclusi quelli privi di vendite; poi intercetta l'assenza di dati verificando l'assenza di valori della chiave nella tabella associata.",
+                tables: [
+                    {
+                        name: "Prodotti (Catalogo)",
+                        columns: ["CodProdotto (PK 🔑)", "Descrizione", "Prezzo"],
+                        rows: [
+                            ["P-01", "Laptop Pro 15", "1200 €"],
+                            ["P-02", "Mouse Wireless", "25 €"],
+                            ["P-03", "Proiettore 4K (Inattivo)", "850 €"]
+                        ]
+                    },
+                    {
+                        name: "DettagliOrdini (Vendite)",
+                        columns: ["IDRiga (PK 🔑)", "CodProdotto (FK 🔗)", "Qta"],
+                        rows: [
+                            [1, "P-01", 3],
+                            [2, "P-02", 10],
+                            [3, "P-01", 1]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Prodotti.CodProdotto' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Prodotti.Descrizione' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Prodotti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: 'LEFT JOIN' },
+                        { type: 'table', text: 'DettagliOrdini' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Prodotti.CodProdotto' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'DettagliOrdini.CodProdotto' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'DettagliOrdini.CodProdotto' },
+                        { type: 'slot', id: 's2', correct: 'IS NULL' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['LEFT JOIN', 'IS NULL', '= NULL', 'INNER JOIN', 'NOT NULL', 'RIGHT JOIN'],
+                resultOutput: {
+                    columns: ["CodProdotto", "Descrizione"],
+                    rows: [
+                        ["P-03", "Proiettore 4K (Inattivo)"]
+                    ]
+                },
+                explanation: "Bravissimo! Il prodotto 'P-03 Proiettore 4K' non figura nei dettagli ordini, perciò la LEFT JOIN produce valori NULL permettendone l'individuazione."
+            },
+            {
+                id: 5,
+                title: "5. Performance Agenti di Vendita (Provvigione >= 10%)",
+                badge: "Rete Commerciale",
+                desc: "Estrarre i dati garantendo la lettura di tutti gli Agenti ed i relativi Contratti stipulati, ma isolare solo gli agenti aventi una provvigione elevata (>= 10%).",
+                tip: "Garantisci l'inclusione completa della tabella definita a destra nella clausola di giunzione, quindi applica l'operatore di confronto matematico opportuno.",
+                tables: [
+                    {
+                        name: "Contratti (Sinistra)",
+                        columns: ["IDContratto (PK 🔑)", "IDAgente (FK 🔗)", "Valore"],
+                        rows: [
+                            [701, 10, "15000 €"],
+                            [702, 20, "8000 €"]
+                        ]
+                    },
+                    {
+                        name: "Agenti (Destra)",
+                        columns: ["IDAgente (PK 🔑)", "Nome", "PercentualeProvvigione"],
+                        rows: [
+                            [10, "Marco Forti", "12 %"],
+                            [20, "Elena Masi", "8 %"],
+                            [30, "Stefano Riva", "15 %"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Agenti.Nome' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Contratti.Valore' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Agenti.PercentualeProvvigione' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Contratti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: 'RIGHT JOIN' },
+                        { type: 'table', text: 'Agenti' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Contratti.IDAgente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Agenti.IDAgente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Agenti.PercentualeProvvigione' },
+                        { type: 'slot', id: 's2', correct: '>=' },
+                        { type: 'value', text: '10' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['RIGHT JOIN', '>=', '<=', 'LEFT JOIN', 'INNER JOIN', '='],
+                resultOutput: {
+                    columns: ["Nome", "Valore", "PercentualeProvvigione"],
+                    rows: [
+                        ["Marco Forti", "15000 €", "12 %"],
+                        ["Stefano Riva", "NULL", "15 %"]
+                    ]
+                },
+                explanation: "Eccellente! Vengono mostrati solo gli agenti Marco Forti (12%) e Stefano Riva (15%). Per Stefano Riva il valore del contratto risulta NULL poiché non ha ancora chiuso vendite."
+            },
+            {
+                id: 6,
+                title: "6. Struttura Organizzativa Aziendale a 3 Tabelle",
+                badge: "Gerarchia Organizzativa",
+                desc: "Estrarre i dipendenti, la denominazione del loro reparto e la città della sede aziendale, filtrando esclusivamente per il reparto 'Contabilità'.",
+                tip: "Collega in catena le tre entità mediante le rispettive chiavi esterne ed isola il nome del reparto desiderato.",
+                tables: [
+                    {
+                        name: "Dipendenti",
+                        columns: ["IDDip (PK 🔑)", "Nome", "IDReparto (FK 🔗)"],
+                        rows: [
+                            [1, "Alice Bruni", "R1"],
+                            [2, "Roberto Ferri", "R2"]
+                        ]
+                    },
+                    {
+                        name: "Reparti",
+                        columns: ["IDReparto (PK 🔑)", "NomeReparto", "IDSede (FK 🔗)"],
+                        rows: [
+                            ["R1", "Contabilità", "S1"],
+                            ["R2", "Marketing", "S1"]
+                        ]
+                    },
+                    {
+                        name: "Sedi",
+                        columns: ["IDSede (PK 🔑)", "Citta"],
+                        rows: [
+                            ["S1", "Milano Headquarters"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Dipendenti.Nome' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Reparti.NomeReparto' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Sedi.Citta' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Dipendenti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: ['INNER JOIN', 'JOIN'] },
+                        { type: 'table', text: 'Reparti' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Dipendenti.IDReparto' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Reparti.IDReparto' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's2', correct: ['INNER JOIN', 'JOIN'] },
+                        { type: 'table', text: 'Sedi' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Reparti.IDSede' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Sedi.IDSede' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Reparti.NomeReparto' },
+                        { type: 'text', text: " = 'Contabilità';" }
+                    ]
+                ],
+                chips: ['INNER JOIN', 'JOIN', 'LEFT JOIN', 'WHERE', 'ON', 'AND'],
+                resultOutput: {
+                    columns: ["Nome", "NomeReparto", "Citta"],
+                    rows: [
+                        ["Alice Bruni", "Contabilità", "Milano Headquarters"]
+                    ]
+                },
+                explanation: "Ottimo lavoro! La doppia INNER JOIN interconnette le 3 tabelle relazionali e la WHERE isola solo il personale del reparto Contabilità."
+            },
+            {
+                id: 7,
+                title: "7. Ricerca Testuale negli Ordini d'Acquisto",
+                badge: "Ricerca Parziale",
+                desc: "Mostrare i Fornitori e gli Ordini d'Acquisto la cui descrizione dell'oggetto contenga la parola 'Hardware'.",
+                tip: "Per ricercare una sequenza di caratteri all'interno di una stringa senza conoscere l'esatta posizione, utilizza l'operatore di pattern matching appropriato.",
+                tables: [
+                    {
+                        name: "Fornitori",
+                        columns: ["IDFornitore (PK 🔑)", "RagioneSociale"],
+                        rows: [
+                            ["F-10", "Tech Wholesale Spa"],
+                            ["F-20", "Ufficio Moderno Srl"]
+                        ]
+                    },
+                    {
+                        name: "OrdiniAcquisto",
+                        columns: ["IDOrdine (PK 🔑)", "IDFornitore (FK 🔗)", "Oggetto"],
+                        rows: [
+                            [8001, "F-10", "Fornitura Hardware Server"],
+                            [8002, "F-20", "Cancelleria e Carta A4"],
+                            [8003, "F-10", "Componenti Hardware RAM"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Fornitori.RagioneSociale' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'OrdiniAcquisto.Oggetto' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Fornitori' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: 'LEFT JOIN' },
+                        { type: 'table', text: 'OrdiniAcquisto' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Fornitori.IDFornitore' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'OrdiniAcquisto.IDFornitore' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'OrdiniAcquisto.Oggetto' },
+                        { type: 'slot', id: 's2', correct: 'LIKE' },
+                        { type: 'value', text: "'%Hardware%'" },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['LEFT JOIN', 'LIKE', '=', 'RIGHT JOIN', 'IN', 'INNER JOIN'],
+                resultOutput: {
+                    columns: ["RagioneSociale", "Oggetto"],
+                    rows: [
+                        ["Tech Wholesale Spa", "Fornitura Hardware Server"],
+                        ["Tech Wholesale Spa", "Componenti Hardware RAM"]
+                    ]
+                },
+                explanation: "Perfetto! L'operatore 'LIKE %Hardware%' ha filtrato solo le descrizioni di ordine d'acquisto che contengono il termine Hardware."
+            },
+            {
+                id: 8,
+                title: "8. Audit Contabile ed Anomalie nelle Partite IVA",
+                badge: "Audit & Disallineamenti",
+                desc: "Condurre un controllo incrociato: estrarre le anomalie in cui il Cliente è privo di Registro IVA oppure la Partita IVA non corrisponde ad alcun Cliente in anagrafica.",
+                tip: "Utilizza un tipo di giunzione che conservi i record non abbinati di entrambe le tabelle, filtrando le righe dove uno dei due riferimenti manca.",
+                tables: [
+                    {
+                        name: "Anagrafica (Sinistra)",
+                        columns: ["IDCliente (PK 🔑)", "RagioneSociale"],
+                        rows: [
+                            [101, "Cliente Valido Spa"],
+                            [102, "Cliente Senza P.IVA"]
+                        ]
+                    },
+                    {
+                        name: "RegistroIVA (Destra)",
+                        columns: ["IDRegistro (PK 🔑)", "IDCliente (FK 🔗)", "PartitaIVA"],
+                        rows: [
+                            [1, 101, "IT01234567890"],
+                            [2, 999, "IT99999999999"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Anagrafica.RagioneSociale' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'RegistroIVA.PartitaIVA' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Anagrafica' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: 'FULL OUTER JOIN' },
+                        { type: 'table', text: 'RegistroIVA' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Anagrafica.IDCliente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'RegistroIVA.IDCliente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Anagrafica.IDCliente' },
+                        { type: 'text', text: ' IS NULL ' },
+                        { type: 'slot', id: 's2', correct: 'OR' },
+                        { type: 'column', text: ' RegistroIVA.IDCliente' },
+                        { type: 'text', text: ' IS NULL;' }
+                    ]
+                ],
+                chips: ['FULL OUTER JOIN', 'OR', 'AND', 'LEFT JOIN', 'WHERE', 'ON'],
+                resultOutput: {
+                    columns: ["RagioneSociale", "PartitaIVA"],
+                    rows: [
+                        ["Cliente Senza P.IVA", "NULL"],
+                        ["NULL", "IT99999999999"]
+                    ]
+                },
+                explanation: "Complimenti! Hai eseguito un report di controllo contabile impeccabile, riscontrando sia l'anagrafica priva di P.IVA sia il record registro privo di cliente."
+            },
+            {
+                id: 9,
+                title: "9. Selezioni per Fasce di Fatturato (2000 € - 8000 €)",
+                badge: "Fasce di Fatturato",
+                desc: "Selezionare l'Agente, il Numero di Fattura e l'Importo per tutte le vendite la cui cifra è compresa nell'intervallo tra 2000 € e 8000 € inclusi.",
+                tip: "Per specificare un range compreso tra due estremi numerici inclusi, adotta la clausola di intervallo ottimizzata.",
+                tables: [
+                    {
+                        name: "Agenti",
+                        columns: ["IDAgente (PK 🔑)", "Nome"],
+                        rows: [
+                            [1, "Gianni Neri"],
+                            [2, "Carla Verdi"]
+                        ]
+                    },
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura (PK 🔑)", "IDAgente (FK 🔗)", "Importo"],
+                        rows: [
+                            [301, 1, "1200 €"],
+                            [302, 2, "4500 €"],
+                            [303, 1, "7800 €"],
+                            [304, 2, "12500 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Agenti.Nome' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Fatture.NumFattura' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Fatture.Importo' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Agenti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: ['INNER JOIN', 'JOIN'] },
+                        { type: 'table', text: 'Fatture' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Agenti.IDAgente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Fatture.IDAgente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Fatture.Importo' },
+                        { type: 'slot', id: 's2', correct: 'BETWEEN' },
+                        { type: 'value', text: '2000 AND 8000' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['INNER JOIN', 'BETWEEN', 'IN', 'LEFT JOIN', 'LIKE', 'JOIN'],
+                resultOutput: {
+                    columns: ["Nome", "NumFattura", "Importo"],
+                    rows: [
+                        ["Carla Verdi", 302, "4500 €"],
+                        ["Gianni Neri", 303, "7800 €"]
+                    ]
+                },
+                explanation: "Eccellente! Le fatture 302 (4500 €) e 303 (7800 €) rientrano perfettamente nel range definito da BETWEEN 2000 AND 8000."
+            },
+            {
+                id: 10,
+                title: "10. Rischio Creditizio: Clienti del Nord con Scoperto > 1000 €",
+                badge: "Gestione del Credito",
+                desc: "Estrarre i Clienti e i relativi scoperti per i clienti con sede a 'Milano' oppure 'Torino' che abbiano un ImportoAperto superiore a 1000 €.",
+                tip: "Utilizza la precedenza tra operatori logici per raggruppare le città alternative prima di applicare la condizione d'importo obbligatoria.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["IDCliente (PK 🔑)", "RagioneSociale", "Citta"],
+                        rows: [
+                            [1, "Lombarda Srl", "Milano"],
+                            [2, "Piemonte Tech", "Torino"],
+                            [3, "Partenope Spa", "Napoli"]
+                        ]
+                    },
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura (PK 🔑)", "IDCliente (FK 🔗)", "ImportoAperto"],
+                        rows: [
+                            [401, 1, "2300 €"],
+                            [402, 2, "500 €"],
+                            [403, 3, "9000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'column', text: 'Clienti.RagioneSociale' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Clienti.Citta' },
+                        { type: 'text', text: ', ' },
+                        { type: 'column', text: 'Fatture.ImportoAperto' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Clienti' }
+                    ],
+                    [
+                        { type: 'indent' },
+                        { type: 'slot', id: 's1', correct: 'LEFT JOIN' },
+                        { type: 'table', text: 'Fatture' },
+                        { type: 'keyword', text: ' ON' },
+                        { type: 'column', text: ' Clienti.IDCliente' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'column', text: 'Fatture.IDCliente' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'text', text: " (Clienti.Citta = 'Milano' " },
+                        { type: 'slot', id: 's2', correct: 'OR' },
+                        { type: 'text', text: " Clienti.Citta = 'Torino') " },
+                        { type: 'slot', id: 's3', correct: 'AND' },
+                        { type: 'column', text: ' Fatture.ImportoAperto' },
+                        { type: 'text', text: ' > 1000;' }
+                    ]
+                ],
+                chips: ['LEFT JOIN', 'OR', 'AND', 'INNER JOIN', 'NOT', 'WHERE'],
+                resultOutput: {
+                    columns: ["RagioneSociale", "Citta", "ImportoAperto"],
+                    rows: [
+                        ["Lombarda Srl", "Milano", "2300 €"]
+                    ]
+                },
+                explanation: "Fantastico! Hai completato con successo l'ultima e più complessa scheda del laboratorio! La combinazione di JOIN, parentesi logiche (OR) e il filtro finale AND ha estratto esattamente il target richiesto."
+            }
+        ];
+
+        // Global State Variables
+        let currentIdx = 0;
+        let totalScore = 0;
+        let slotState = {}; // { slotId: selectedValue }
+        let showHints = true; // State for Challenge mode
+
+        // Initialize App on Load
+        window.onload = () => {
+            loadQuestion(currentIdx);
+        };
+
+        function toggleChallengeMode() {
+            showHints = !showHints;
+            const btnText = document.getElementById('challenge-text');
+            const btnIcon = document.getElementById('challenge-icon');
+            const tipBox = document.getElementById('didactic-tip-box');
+
+            if (showHints) {
+                btnText.innerText = 'Suggerimenti: ON';
+                btnIcon.className = 'fa-solid fa-lightbulb text-amber-400';
+                if (tipBox) tipBox.classList.remove('hidden');
+            } else {
+                btnText.innerText = 'Modalità Esame (OFF)';
+                btnIcon.className = 'fa-regular fa-lightbulb text-slate-500';
+                if (tipBox) tipBox.classList.add('hidden');
+            }
+        }
+
+        function loadQuestion(idx) {
+            const quiz = joinWhereQuizData[idx];
+            slotState = {};
+
+            // Header & Scenario Updates
+            document.getElementById('quiz-progress-text').innerText = `${idx + 1} / ${joinWhereQuizData.length}`;
+            document.getElementById('score-text').innerText = `${totalScore} pt`;
+            document.getElementById('scenario-title').innerText = quiz.title;
+            document.getElementById('scenario-desc').innerText = quiz.desc;
+            document.getElementById('join-type-badge').innerText = quiz.badge;
+
+            // Render Components
+            renderTables(quiz.tables);
+            renderQueryBuilder(quiz.queryTemplate);
+            renderChips(quiz.chips);
+
+            // Reset Feedback & Controls
+            const fbPanel = document.getElementById('feedback-panel');
+            fbPanel.classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('result-table-box').classList.add('hidden');
+        }
+
+        function renderTables(tables) {
+            const container = document.getElementById('db-tables-container');
+            container.innerHTML = '';
+
+            tables.forEach((table, tIdx) => {
+                const box = document.createElement('div');
+                box.className = 'bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-md';
+
+                const accentBorder = tIdx === 0 ? 'border-l-4 border-violet-500' : (tIdx === 1 ? 'border-l-4 border-indigo-500' : 'border-l-4 border-emerald-500');
+
+                let tableHtml = `
+                    <div class="bg-slate-900/90 px-3.5 py-2 border-b border-slate-800 flex justify-between items-center ${accentBorder}">
+                        <span class="font-mono-code text-xs font-bold text-slate-200">${table.name}</span>
+                        <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono-code">${table.rows.length} record</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-900 text-slate-400 uppercase font-mono-code text-[10px] border-b border-slate-800">
+                                <tr>
+                                    ${table.columns.map(col => {
+                                        if (col.includes('PK') || col.includes('🔑')) {
+                                            return `<th class="px-3 py-2 text-amber-300 font-bold bg-amber-500/10 border-r border-slate-800/60">${col}</th>`;
+                                        } else if (col.includes('FK') || col.includes('🔗')) {
+                                            return `<th class="px-3 py-2 text-sky-300 font-bold bg-sky-500/10 border-r border-slate-800/60">${col}</th>`;
+                                        }
+                                        return `<th class="px-3 py-2 border-r border-slate-800/60">${col}</th>`;
+                                    }).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 font-mono-code">
+                `;
+
+                table.rows.forEach((row) => {
+                    tableHtml += `<tr class="hover:bg-slate-800/40 transition">`;
+                    row.forEach((cell, cellIdx) => {
+                        const colName = table.columns[cellIdx] || '';
+                        let cellStyle = 'px-3 py-2 border-r border-slate-800/40';
+                        if (colName.includes('PK') || colName.includes('🔑')) cellStyle += ' text-amber-200/90 font-bold';
+                        else if (colName.includes('FK') || colName.includes('🔗')) cellStyle += ' text-sky-200/90 font-bold';
+
+                        tableHtml += `<td class="${cellStyle}">${cell}</td>`;
+                    });
+                    tableHtml += `</tr>`;
+                });
+
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>`;
+                box.innerHTML = tableHtml;
+                container.appendChild(box);
+            });
+        }
+
+        function renderQueryBuilder(templateLines) {
+            const container = document.getElementById('query-builder-area');
+            container.innerHTML = '';
+
+            templateLines.forEach(lineTokens => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'w-full flex items-center flex-wrap gap-2 py-1.5 border-b border-slate-800/40 last:border-b-0';
+
+                lineTokens.forEach(part => {
+                    if (part.type === 'indent') {
+                        const indentSpan = document.createElement('span');
+                        indentSpan.className = 'w-6 inline-block flex-shrink-0';
+                        lineDiv.appendChild(indentSpan);
+                    } else if (part.type === 'keyword') {
+                        const span = document.createElement('span');
+                        span.className = 'text-indigo-400 font-bold';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'table') {
+                        const span = document.createElement('span');
+                        span.className = 'text-purple-300 font-bold bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'column') {
+                        const span = document.createElement('span');
+                        span.className = 'text-amber-300 font-semibold font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'value') {
+                        const span = document.createElement('span');
+                        span.className = 'text-emerald-300 font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'text') {
+                        const span = document.createElement('span');
+                        span.className = 'text-slate-200';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'slot') {
+                        const slot = document.createElement('div');
+                        slot.id = 'slot-' + part.id;
+                        slot.dataset.slotId = part.id;
+                        slot.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/90 text-slate-400 cursor-pointer text-xs font-bold hover:border-violet-500 transition shadow-inner';
+                        
+                        slot.innerHTML = '<span class="text-xs text-slate-500 italic"><i class="fa-solid fa-plus text-[10px] mr-1"></i>Scegli</span>';
+                        slot.onclick = () => onSlotClick(part.id);
+                        lineDiv.appendChild(slot);
+                    }
+                });
+
+                container.appendChild(lineDiv);
+            });
+        }
+
+        function renderChips(chips) {
+            const palette = document.getElementById('chips-palette');
+            palette.innerHTML = '';
+
+            chips.forEach((chipVal, i) => {
+                const chip = document.createElement('div');
+                chip.id = `chip-${i}`;
+                chip.className = 'chip px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-mono-code font-bold text-xs shadow-md border border-violet-400/30 flex items-center gap-1.5';
+                chip.innerText = chipVal;
+                
+                chip.onclick = () => onChipClick(chipVal);
+                palette.appendChild(chip);
+            });
+        }
+
+        function onChipClick(val) {
+            const quiz = joinWhereQuizData[currentIdx];
+            const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+
+            let emptySlot = slots.find(s => !slotState[s.id]);
+            if (emptySlot) {
+                fillSlot(emptySlot.id, val);
+            }
+        }
+
+        function onSlotClick(slotId) {
+            if (slotState[slotId]) {
+                clearSlot(slotId);
+            }
+        }
+
+        function fillSlot(slotId, val) {
+            slotState[slotId] = val;
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-violet-600 text-white font-mono-code font-bold text-xs shadow-lg border border-violet-400 transition';
+            slotElem.innerHTML = `<span>${val}</span> <i class="fa-solid fa-xmark text-xs ml-2 text-violet-200 hover:text-white"></i>`;
+
+            updateChipsVisuals();
+        }
+
+        function clearSlot(slotId) {
+            delete slotState[slotId];
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3 py-1.5 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/90 text-slate-400 cursor-pointer text-xs font-bold hover:border-violet-500 transition shadow-inner';
+            slotElem.innerHTML = `<span class="text-xs text-slate-500 italic"><i class="fa-solid fa-plus text-[10px] mr-1"></i>Scegli</span>`;
+
+            updateChipsVisuals();
+        }
+
+        function clearAllSlots() {
+            slotState = {};
+            const quiz = joinWhereQuizData[currentIdx];
+            quiz.queryTemplate.flat().filter(p => p.type === 'slot').forEach(s => {
+                clearSlot(s.id);
+            });
+        }
+
+        function updateChipsVisuals() {
+            const usedValues = Object.values(slotState);
+            const palette = document.getElementById('chips-palette');
+            const chipsElems = palette.children;
+
+            const usedCounts = {};
+            usedValues.forEach(v => usedCounts[v] = (usedCounts[v] || 0) + 1);
+
+            const currentCounts = {};
+            Array.from(chipsElems).forEach(chip => {
+                const val = chip.innerText.trim();
+                currentCounts[val] = (currentCounts[val] || 0) + 1;
+                
+                if (usedCounts[val] && usedCounts[val] >= currentCounts[val]) {
+                    chip.classList.add('opacity-30', 'pointer-events-none', 'scale-95');
+                } else {
+                    chip.classList.remove('opacity-30', 'pointer-events-none', 'scale-95');
+                }
+            });
+        }
+
+        function verifyAnswer() {
+            const quiz = joinWhereQuizData[currentIdx];
+            const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+
+            let isComplete = true;
+            let isCorrect = true;
+
+            slots.forEach(s => {
+                if (!slotState[s.id]) {
+                    isComplete = false;
+                } else {
+                    const userVal = slotState[s.id];
+                    if (Array.isArray(s.correct)) {
+                        if (!s.correct.includes(userVal)) isCorrect = false;
+                    } else if (userVal !== s.correct) {
+                        isCorrect = false;
+                    }
+                }
+            });
+
+            const fbPanel = document.getElementById('feedback-panel');
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbTitle = document.getElementById('feedback-title');
+            const fbText = document.getElementById('feedback-text');
+            const resultBox = document.getElementById('result-table-box');
+            const nextBtn = document.getElementById('next-btn');
+
+            fbPanel.classList.remove('hidden');
+
+            if (!isComplete) {
+                playSound('error');
+                fbPanel.className = 'bg-amber-950/40 border border-amber-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                fbTitle.className = 'font-bold text-lg text-amber-300 mb-1';
+                fbTitle.innerText = 'Sintassi Incompleta';
+                fbText.innerText = 'Riempi tutti gli spazi vuoti inserendo i tasselli SQL corretti prima di eseguire la query!';
+                resultBox.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            if (isCorrect) {
+                playSound('success');
+
+                // Assegna punteggio solo alla prima risoluzione corretta della scheda
+                if (!quiz.solved) {
+                    quiz.solved = true;
+                    totalScore += 20;
+                    document.getElementById('score-text').innerText = `${totalScore} pt`;
+                }
+
+                fbPanel.className = 'bg-emerald-950/40 border border-emerald-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-emerald-500/20 text-emerald-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                fbTitle.className = 'font-bold text-lg text-emerald-300 mb-1';
+                fbTitle.innerText = 'Query Corretta ed Eseguita con Successo!';
+                fbText.innerText = quiz.explanation;
+
+                // Render output result table
+                renderResultTable(quiz.resultOutput);
+                resultBox.classList.remove('hidden');
+
+                // Personalizzazione pulsante per la 10ª scheda finale
+                if (currentIdx === joinWhereQuizData.length - 1) {
+                    nextBtn.innerHTML = `<span>Visualizza Report Finale e Stampa PDF</span> <i class="fa-solid fa-print"></i>`;
+                    nextBtn.className = "px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 text-sm animate-pulse";
+                    
+                    const headerReportBtn = document.getElementById('header-report-btn');
+                    if (headerReportBtn) headerReportBtn.classList.remove('hidden');
+                } else {
+                    nextBtn.innerHTML = `<span>Scheda Successiva</span> <i class="fa-solid fa-arrow-right"></i>`;
+                    nextBtn.className = "px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center gap-2 text-sm";
+                }
+
+                nextBtn.classList.remove('hidden');
+                nextBtn.classList.add('flex');
+            } else {
+                playSound('error');
+                fbPanel.className = 'bg-rose-950/40 border border-rose-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-rose-500/20 text-rose-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                fbTitle.className = 'font-bold text-lg text-rose-300 mb-1';
+                fbTitle.innerText = 'Errore di Logica nella Query SQL';
+                fbText.innerText = 'Uno o più tasselli scelti non rispetta il tipo di JOIN o la sintassi del filtro WHERE richiesta. Verifica i parametri inseriti!';
+                resultBox.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function renderResultTable(output) {
+            const head = document.getElementById('result-table-head');
+            const body = document.getElementById('result-table-body');
+
+            head.innerHTML = `<tr>${output.columns.map(c => `<th class="px-3 py-2 border-b border-slate-800">${c}</th>`).join('')}</tr>`;
+            
+            body.innerHTML = output.rows.map(row => `
+                <tr class="hover:bg-slate-900/60">
+                    ${row.map(cell => {
+                        if (cell === 'NULL') {
+                            return `<td class="px-3 py-2 text-rose-400 font-bold italic"><span class="bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/30">NULL</span></td>`;
+                        }
+                        return `<td class="px-3 py-2 text-emerald-300 font-semibold">${cell}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+        }
+
+        function nextQuestion() {
+            if (currentIdx < joinWhereQuizData.length - 1) {
+                currentIdx++;
+                loadQuestion(currentIdx);
+            } else {
+                showCompletionModal();
+            }
+        }
+
+        function resetCurrentQuiz() {
+            loadQuestion(currentIdx);
+        }
+
+        function showCompletionModal() {
+            const currentDate = new Date().toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            const main = document.querySelector('main');
+            main.innerHTML = `
+                <div class="col-span-12 max-w-4xl mx-auto w-full my-4 md:my-8">
+                    
+                    <!-- Form Dati Studente (Nascosto durante la stampa) -->
+                    <div class="no-print bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl mb-6">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="bg-emerald-500/20 text-emerald-400 p-3 rounded-xl border border-emerald-500/30">
+                                <i class="fa-solid fa-file-signature text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Generazione Report per Google Classroom</h2>
+                                <p class="text-xs text-slate-400">Compila i tuoi dati personali per generare la scheda di consegna ufficiale ed esportare il PDF.</p>
+                            </div>
+                        </div>
+
+                        <!-- Warning Message Box -->
+                        <div id="print-warning" class="hidden mb-4 p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-sm"></i>
+                            <span>Compila sia il Nome che il Cognome prima di stampare il report!</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome Studente *</label>
+                                <input type="text" id="student-firstname" placeholder="Es. Mario" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Cognome Studente *</label>
+                                <input type="text" id="student-lastname" placeholder="Es. Rossi" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Classe</label>
+                                <input type="text" id="student-class" value="4ª AFM" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 pt-4">
+                            <button onclick="window.location.reload()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                Ricomincia Laboratorio
+                            </button>
+                            <button onclick="printReport()" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                                <i class="fa-solid fa-print"></i>
+                                Stampa / Salva in PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scheda Report Ufficiale da Stampare -->
+                    <div id="printable-certificate" class="print-only-container bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+                        <div class="border-4 border-indigo-500/30 rounded-2xl p-6 md:p-8 bg-slate-950/60">
+                            
+                            <!-- Header Report -->
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-6 mb-6">
+                                <div>
+                                    <span class="text-xs font-mono-code uppercase font-bold text-indigo-400 tracking-widest block mb-1">Indirizzo Amministrazione, Finanza e Marketing</span>
+                                    <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">Report Valutazione Laboratorio SQL JOIN & WHERE</h1>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-slate-400 block font-mono-code">Data Consegna:</span>
+                                    <span class="text-sm font-bold text-slate-200 font-mono-code">${currentDate}</span>
+                                </div>
+                            </div>
+
+                            <!-- Dati Studente e Esito -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-slate-900/80 p-5 rounded-xl border border-slate-800">
+                                <div class="space-y-2">
+                                    <div class="text-xs text-slate-400 uppercase font-semibold">Candidato / Studente:</div>
+                                    <div id="cert-student-name" class="text-xl font-bold text-amber-300 tracking-wide">___ ___</div>
+                                    <div class="text-xs text-slate-400">Classe: <span id="cert-student-class" class="text-slate-200 font-bold">4ª AFM</span></div>
+                                </div>
+                                <div class="space-y-2 md:text-right border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-6">
+                                    <div class="text-xs text-slate-400 uppercase font-semibold">Punteggio Totale Conseguito:</div>
+                                    <div class="text-3xl font-bold text-emerald-400 font-mono-code">${totalScore} / ${joinWhereQuizData.length * 20} pt</div>
+                                    <div class="text-xs text-slate-300">Schede Completate: <span class="text-emerald-400 font-bold">10 / 10 (100%)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Riepilogo Competenze Verificate -->
+                            <div class="mb-8">
+                                <h3 class="text-xs uppercase font-semibold text-slate-400 tracking-wider mb-3">Competenze Relazionali Verificate nel Laboratorio:</h3>
+                                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono-code text-slate-300">
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        1. INNER JOIN + WHERE su Importi
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        2. LEFT JOIN + WHERE su Stato Pagamenti
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        3. Filtri Multipli AND (Date e Sedi)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        4. Ricerca Giacenze con LEFT JOIN + IS NULL
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        5. RIGHT JOIN + Filtri su Provvigioni
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        6. INNER JOIN Multipla a 3 Tabelle
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        7. Ricerca Testuale Parziale con LIKE (%...%)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        8. FULL OUTER JOIN + Anomalie (OR ... IS NULL)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        9. Filtri di Intervallo con BETWEEN...AND
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        10. Parentesi Logiche e Filtri Complessi (OR) AND
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Blocchi Firme -->
+                            <div class="grid grid-cols-2 gap-8 pt-8 border-t border-slate-800 text-center">
+                                <div>
+                                    <div class="h-10 border-b border-dashed border-slate-600 mb-2"></div>
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Firma dello Studente</span>
+                                </div>
+                                <div>
+                                    <div class="h-10 border-b border-dashed border-slate-600 mb-2"></div>
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Firma del Docente</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        }
+
+        function updateCertificate() {
+            const fname = document.getElementById('student-firstname')?.value.trim() || '';
+            const lname = document.getElementById('student-lastname')?.value.trim() || '';
+            const sclass = document.getElementById('student-class')?.value.trim() || '4ª AFM';
+
+            const nameElem = document.getElementById('cert-student-name');
+            const classElem = document.getElementById('cert-student-class');
+
+            if (nameElem) {
+                nameElem.innerText = (fname || lname) ? `${fname} ${lname}`.toUpperCase() : '___ ___';
+            }
+            if (classElem) {
+                classElem.innerText = sclass || '4ª AFM';
+            }
+        }
+
+        function printReport() {
+            const fname = document.getElementById('student-firstname')?.value.trim();
+            const lname = document.getElementById('student-lastname')?.value.trim();
+            const warningBox = document.getElementById('print-warning');
+
+            if (!fname || !lname) {
+                if (warningBox) warningBox.classList.remove('hidden');
+                return;
+            }
+
+            if (warningBox) warningBox.classList.add('hidden');
+            window.print();
+        }
+    </script>
+</body>
+</html>

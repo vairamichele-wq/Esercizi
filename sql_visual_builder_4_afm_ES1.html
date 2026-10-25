@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Code Builder - 4ª AFM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .slot-target {
+            min-width: 110px;
+            min-height: 40px;
+            transition: all 0.2s ease;
+        }
+        .slot-target.active {
+            border-color: #3b82f6;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+        }
+        .chip {
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .chip:active {
+            transform: translateY(0);
+        }
+        .highlight-row {
+            background-color: rgba(16, 185, 129, 0.25) !important;
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* PRINT STYLES FOR PDF REPORT */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #print-report-wrapper {
+                display: block !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .print-border {
+                border: 1px solid #cbd5e1 !important;
+            }
+            .print-bg-gray {
+                background-color: #f8fafc !important;
+            }
+            .print-text-dark {
+                color: #0f172a !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+    <!-- Header Navigation (hidden on print) -->
+    <header class="no-print max-w-7xl w-full mx-auto bg-slate-800/80 backdrop-blur border border-slate-700 rounded-2xl p-4 mb-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-database text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg md:text-xl text-white tracking-wide">SQL Visual Builder</h1>
+                <p class="text-xs text-slate-400">Laboratorio SQL - Indirizzo AFM</p>
+            </div>
+        </div>
+
+        <!-- Student Name & Class Input -->
+        <div class="flex flex-wrap items-center gap-3 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-user-graduate text-indigo-400 text-sm"></i>
+                <input type="text" id="student-name-input" placeholder="Nome e Cognome" onchange="updateStudentInfo()" class="bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-indigo-400 w-36 md:w-44 font-medium" />
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Classe:</span>
+                <input type="text" id="student-class-input" value="4ª AFM" onchange="updateStudentInfo()" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-400 w-20 text-center font-medium" />
+            </div>
+        </div>
+
+        <!-- Progress Indicator & Score -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 bg-slate-900/60 px-3.5 py-1.5 rounded-xl border border-slate-700/60">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Scheda</span>
+                <span id="quiz-progress-text" class="font-bold text-indigo-400 font-mono-code text-base">1 / 6</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/60 px-3.5 py-1.5 rounded-xl border border-slate-700/60">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Punteggio</span>
+                <span id="score-text" class="font-bold text-emerald-400 font-mono-code text-base">0 pt</span>
+            </div>
+            <button onclick="resetCurrentQuiz()" class="p-2 text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-xl transition" title="Ricomincia Esercizio">
+                <i class="fa-solid fa-rotate-right text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container (hidden on print) -->
+    <main id="main-interactive-area" class="no-print max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <!-- Left Column: Scenario & Database Tables Preview (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+            
+            <!-- Scenario Card -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center space-x-2 text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">
+                    <i class="fa-solid fa-bullseye"></i>
+                    <span>Obiettivo Gestionale</span>
+                </div>
+                <h2 id="scenario-title" class="text-xl font-bold text-white mb-2">Caricamento in corso...</h2>
+                <p id="scenario-desc" class="text-slate-300 text-sm leading-relaxed">...</p>
+            </div>
+
+            <!-- Database Tables Preview -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg flex-grow flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2 text-slate-400 font-semibold text-xs tracking-wider uppercase">
+                        <i class="fa-solid fa-table"></i>
+                        <span>Archivio Dati (Database)</span>
+                    </div>
+                    <span class="text-xs text-slate-400 bg-slate-900/50 px-2.5 py-1 rounded-md border border-slate-700">Modello Relazionale</span>
+                </div>
+
+                <!-- Tables Container -->
+                <div id="db-tables-container" class="space-y-6 overflow-y-auto max-h-[380px] pr-1">
+                    <!-- Dynamic Tables Generated Here -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Interactive SQL Query Builder & Chips (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+            
+            <!-- Query Construction Box (Code Editor Style) -->
+            <div class="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                <!-- Editor Top Bar -->
+                <div class="bg-slate-950/80 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                        <span class="ml-3 text-xs font-mono-code text-slate-400">query_builder.sql</span>
+                    </div>
+                    <span class="text-xs text-slate-500 font-mono-code">MODE: STRICT ASSESSMENT</span>
+                </div>
+
+                <!-- Color Legend Bar -->
+                <div class="flex flex-wrap items-center gap-2.5 text-xs font-medium px-4 py-2 bg-slate-950/90 border-b border-slate-800/80">
+                    <span class="text-slate-400 uppercase text-[10px] font-bold tracking-wider mr-1">Legenda Sintassi:</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-700/50 text-[11px] font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-purple-400 mr-1.5"></span> Clausole SQL
+                    </span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-700/50 text-[11px] font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-sky-400 mr-1.5"></span> Tabelle
+                    </span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700/50 text-[11px] font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 mr-1.5"></span> Colonne
+                    </span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 text-[11px] font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5"></span> Valori / Operatori
+                    </span>
+                </div>
+
+                <!-- Query Code View (Vertical Code Line Container) -->
+                <div class="p-4 md:p-5 font-mono-code text-base overflow-x-auto min-h-[220px] flex flex-col space-y-1 text-slate-200" id="query-builder-area">
+                    <!-- Dynamic Query Lines & Slots -->
+                </div>
+
+                <!-- Action Button Bar -->
+                <div class="p-4 bg-slate-950/40 border-t border-slate-800/80 flex items-center justify-between gap-4">
+                    <button onclick="clearAllSlots()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i>
+                        Svuota Tasselli
+                    </button>
+                    <button id="verify-btn" onclick="verifyAnswer()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i>
+                        Esegui Query SQL
+                    </button>
+                </div>
+            </div>
+
+            <!-- Available Tasselli (Chips Palette) -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cubes text-indigo-400"></i>
+                        Tasselli SQL Disponibili
+                    </h3>
+                    <span class="text-xs text-slate-500">Seleziona con attenzione</span>
+                </div>
+                
+                <div id="chips-palette" class="flex flex-wrap gap-2.5 min-h-[65px] p-2.5 bg-slate-900/50 rounded-xl border border-slate-700/50 items-center">
+                    <!-- Dynamic Chips -->
+                </div>
+            </div>
+
+            <!-- Feedback & Output Result Drawer -->
+            <div id="feedback-panel" class="hidden bg-slate-800 border rounded-2xl p-5 shadow-xl transition-all">
+                <div class="flex items-start space-x-3">
+                    <div id="feedback-icon" class="p-2.5 rounded-xl text-xl flex-shrink-0 mt-0.5"></div>
+                    <div class="flex-grow">
+                        <h4 id="feedback-title" class="font-bold text-lg mb-1"></h4>
+                        <p id="feedback-text" class="text-sm text-slate-300 leading-relaxed mb-3"></p>
+                        
+                        <!-- Resulting Data Table Preview (Shown on success) -->
+                        <div id="result-table-box" class="hidden mt-4">
+                            <h5 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-table-cells"></i>
+                                Report Generato dal Database (Output)
+                            </h5>
+                            <div class="overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/80">
+                                <table class="w-full text-left text-xs text-slate-300">
+                                    <thead class="bg-slate-950 text-indigo-300 uppercase font-mono-code text-[11px]" id="result-table-head">
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800 font-mono-code" id="result-table-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Next Question / Finish Button -->
+                        <div class="mt-4 flex justify-end gap-3">
+                            <button id="next-btn" onclick="nextQuestion()" class="hidden px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition items-center gap-2 text-sm">
+                                <span id="next-btn-text">Prossima Scheda</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- PRINTABLE REPORT CARD (Visible on end screen & when printing) -->
+    <div id="print-report-wrapper" class="hidden max-w-4xl w-full mx-auto my-4 p-6 md:p-10 bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200">
+        <!-- Header Document -->
+        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-6">
+            <div>
+                <div class="flex items-center gap-2 text-indigo-900 font-extrabold text-2xl uppercase tracking-wider">
+                    <i class="fa-solid fa-file-invoice text-indigo-700"></i>
+                    <span>Scheda di Valutazione Laboratorio SQL</span>
+                </div>
+                <p class="text-slate-600 text-sm mt-1">Corso Amministrazione, Finanza e Marketing (AFM) — Verifico Esercitazioni SQL</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-block bg-slate-900 text-white font-mono-code text-xs px-3 py-1 rounded-md font-bold uppercase">Esito Finale</span>
+                <p class="text-xs text-slate-500 mt-2" id="report-timestamp">Data: --/--/----</p>
+            </div>
+        </div>
+
+        <!-- Student & Assessment Info Box -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-8">
+            <div>
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Studente</span>
+                <span id="report-student-name" class="font-bold text-slate-800 text-base">Non Specificato</span>
+            </div>
+            <div>
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Classe</span>
+                <span id="report-student-class" class="font-bold text-slate-800 text-base">4ª AFM</span>
+            </div>
+            <div>
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Punteggio Totale</span>
+                <span id="report-score" class="font-extrabold text-indigo-700 text-lg font-mono-code">0 / 90 pt</span>
+            </div>
+            <div>
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Accuratezza</span>
+                <span id="report-accuracy" class="font-bold text-emerald-700 text-lg font-mono-code">0%</span>
+            </div>
+        </div>
+
+        <!-- Detailed Exercises Log Table -->
+        <div class="mb-8">
+            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-indigo-600"></i>
+                Dettaglio Schede Completate
+            </h3>
+            <table class="w-full text-left text-xs border-collapse border border-slate-300">
+                <thead>
+                    <tr class="bg-slate-100 text-slate-700 font-bold uppercase font-mono-code border-b border-slate-300">
+                        <th class="p-2.5 border-r border-slate-300">N° Esercizio</th>
+                        <th class="p-2.5 border-r border-slate-300">Obiettivo / Sintassi</th>
+                        <th class="p-2.5 border-r border-slate-300 text-center">Tentativi</th>
+                        <th class="p-2.5 border-r border-slate-300 text-center">Stato</th>
+                        <th class="p-2.5 text-right">Punti</th>
+                    </tr>
+                </thead>
+                <tbody id="report-table-body" class="divide-y divide-slate-200 font-mono-code">
+                    <!-- Dynamic Log -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Signature Section -->
+        <div class="grid grid-cols-2 gap-12 mt-12 pt-8 border-t border-slate-300 text-xs text-slate-600">
+            <div>
+                <p class="font-bold uppercase tracking-wider text-slate-500 mb-8">Firma dello Studente</p>
+                <div class="border-b border-slate-400 w-full"></div>
+            </div>
+            <div>
+                <p class="font-bold uppercase tracking-wider text-slate-500 mb-8">Firma del Docente / Valutatore</p>
+                <div class="border-b border-slate-400 w-full"></div>
+            </div>
+        </div>
+
+        <!-- Action Controls (Hidden when printing) -->
+        <div class="no-print mt-10 flex flex-wrap justify-between items-center gap-4 pt-6 border-t border-slate-200">
+            <button onclick="backToQuiz()" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i>
+                Torna agli Esercizi
+            </button>
+            <div class="flex gap-3">
+                <button onclick="window.print()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-print"></i>
+                    Stampa / Salva in PDF
+                </button>
+                <button onclick="window.location.reload()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    Ricomincia Prova
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (hidden on print) -->
+    <footer class="no-print max-w-7xl w-full mx-auto mt-6 text-center text-xs text-slate-500 py-2 border-t border-slate-800">
+        SQL Visual Builder per Indirizzo Amministrazione, Finanza e Marketing (AFM) — Verifico Laboratorio SQL
+    </footer>
+
+    <!-- Audio Effects using Web Audio API -->
+    <script>
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch(e) {}
+        };
+    </script>
+
+    <!-- Core App Logic -->
+    <script>
+        // Database & Question Bank (Structured SQL line-by-line queries)
+        const quizData = [
+            {
+                id: 1,
+                title: "1. Filtro Selezione Clienti",
+                desc: "Estrarre il Nome e il Credito dei clienti che hanno sede nella città di 'Milano'.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["IDCliente", "Nome", "Citta", "Credito"],
+                        rows: [
+                            [101, "Rossi Srl", "Milano", "5000 €"],
+                            [102, "Bianchi Spa", "Roma", "2000 €"],
+                            [103, "Verdi Snc", "Milano", "8000 €"],
+                            [104, "Neri Srl", "Torino", "3500 €"]
+                        ],
+                        highlightIndices: [0, 2]
+                    }
+                ],
+                lines: [
+                    [ { type: 'keyword', text: 'SELECT' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Nome, Credito' } ],
+                    [ { type: 'keyword', text: 'FROM' } ],
+                    [ { type: 'indent' }, { type: 'slot', id: 's1', correct: 'Clienti' } ],
+                    [ { type: 'keyword', text: 'WHERE' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Citta' }, { type: 'text', text: ' ' }, { type: 'slot', id: 's2', correct: '=' }, { type: 'value', text: " 'Milano';" } ]
+                ],
+                chips: [
+                    { val: 'Clienti', type: 'table' },
+                    { val: 'FROM', type: 'keyword' },
+                    { val: '=', type: 'operator' },
+                    { val: 'WHERE', type: 'keyword' },
+                    { val: 'Fatture', type: 'table' },
+                    { val: 'LIKE', type: 'operator' },
+                    { val: 'IN', type: 'operator' },
+                    { val: 'SELECT', type: 'keyword' },
+                    { val: 'HAVING', type: 'keyword' },
+                    { val: 'GROUP BY', type: 'keyword' },
+                    { val: '<>', type: 'operator' }
+                ],
+                resultOutput: {
+                    columns: ["Nome", "Credito"],
+                    rows: [
+                        ["Rossi Srl", "5000 €"],
+                        ["Verdi Snc", "8000 €"]
+                    ]
+                }
+            },
+            {
+                id: 2,
+                title: "2. Ricerca Wildcard (Testo)",
+                desc: "Estrarre i dati di tutti i prodotti la cui Descrizione inizia con la lettera 'S'.",
+                tables: [
+                    {
+                        name: "Prodotti",
+                        columns: ["CodProdotto", "Descrizione", "Prezzo"],
+                        rows: [
+                            ["P01", "Stampante Laser", "150.00 €"],
+                            ["P02", "Scanner Desktop", "90.00 €"],
+                            ["P03", "Monitor 24 inch", "200.00 €"],
+                            ["P04", "Tastiera Wireless", "30.00 €"]
+                        ],
+                        highlightIndices: [0, 1]
+                    }
+                ],
+                lines: [
+                    [ { type: 'keyword', text: 'SELECT' } ],
+                    [ { type: 'indent' }, { type: 'column', text: '*' } ],
+                    [ { type: 'keyword', text: 'FROM' } ],
+                    [ { type: 'indent' }, { type: 'table', text: 'Prodotti' } ],
+                    [ { type: 'keyword', text: 'WHERE' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Descrizione' }, { type: 'text', text: ' ' }, { type: 'slot', id: 's1', correct: 'LIKE' }, { type: 'text', text: ' ' }, { type: 'slot', id: 's2', correct: "'S%'" }, { type: 'text', text: ';' } ]
+                ],
+                chips: [
+                    { val: 'LIKE', type: 'keyword' },
+                    { val: "'S%'", type: 'value' },
+                    { val: '=', type: 'operator' },
+                    { val: "'%S'", type: 'value' },
+                    { val: "'%S%'", type: 'value' },
+                    { val: 'WHERE', type: 'keyword' },
+                    { val: 'CONTAINS', type: 'keyword' },
+                    { val: 'IN', type: 'operator' },
+                    { val: 'HAVING', type: 'keyword' }
+                ],
+                resultOutput: {
+                    columns: ["CodProdotto", "Descrizione", "Prezzo"],
+                    rows: [
+                        ["P01", "Stampante Laser", "150.00 €"],
+                        ["P02", "Scanner Desktop", "90.00 €"]
+                    ]
+                }
+            },
+            {
+                id: 3,
+                title: "3. Condizioni Multiple (AND)",
+                desc: "Estrarre le fatture con Stato 'Non Pagata' che superano l'importo di 1000 €.",
+                tables: [
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura", "Importo", "Stato"],
+                        rows: [
+                            [501, "1200 €", "Non Pagata"],
+                            [502, "450 €", "Pagata"],
+                            [503, "3100 €", "Non Pagata"],
+                            [504, "800 €", "Non Pagata"]
+                        ],
+                        highlightIndices: [0, 2]
+                    }
+                ],
+                lines: [
+                    [ { type: 'keyword', text: 'SELECT' } ],
+                    [ { type: 'indent' }, { type: 'column', text: '*' } ],
+                    [ { type: 'keyword', text: 'FROM' } ],
+                    [ { type: 'indent' }, { type: 'table', text: 'Fatture' } ],
+                    [ { type: 'keyword', text: 'WHERE' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Stato' }, { type: 'operator', text: ' =' }, { type: 'value', text: " 'Non Pagata'" } ],
+                    [ { type: 'indent' }, { type: 'slot', id: 's1', correct: 'AND' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Importo' }, { type: 'text', text: ' ' }, { type: 'slot', id: 's2', correct: '>' }, { type: 'value', text: ' 1000;' } ]
+                ],
+                chips: [
+                    { val: 'AND', type: 'keyword' },
+                    { val: '>', type: 'operator' },
+                    { val: 'OR', type: 'keyword' },
+                    { val: '<', type: 'operator' },
+                    { val: '=', type: 'operator' },
+                    { val: '>=', type: 'operator' },
+                    { val: 'WHERE', type: 'keyword' },
+                    { val: 'NOT', type: 'keyword' },
+                    { val: 'BETWEEN', type: 'keyword' }
+                ],
+                resultOutput: {
+                    columns: ["NumFattura", "Importo", "Stato"],
+                    rows: [
+                        [501, "1200 €", "Non Pagata"],
+                        [503, "3100 €", "Non Pagata"]
+                    ]
+                }
+            },
+            {
+                id: 4,
+                title: "4. Ordinamento Decrescente",
+                desc: "Estrarre Descrizione e Prezzo di tutti i prodotti in ordine dal prezzo più alto al più basso.",
+                tables: [
+                    {
+                        name: "Prodotti",
+                        columns: ["CodProdotto", "Descrizione", "Prezzo"],
+                        rows: [
+                            ["P01", "Computer Desktop", "800.00 €"],
+                            ["P02", "Tastiera USB", "25.00 €"],
+                            ["P03", "Mouse Ottico", "15.00 €"],
+                            ["P04", "Monitor HD", "180.00 €"]
+                        ],
+                        highlightIndices: [0, 3, 1, 2]
+                    }
+                ],
+                lines: [
+                    [ { type: 'keyword', text: 'SELECT' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Descrizione, Prezzo' } ],
+                    [ { type: 'keyword', text: 'FROM' } ],
+                    [ { type: 'indent' }, { type: 'table', text: 'Prodotti' } ],
+                    [ { type: 'slot', id: 's1', correct: 'ORDER BY' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Prezzo' }, { type: 'text', text: ' ' }, { type: 'slot', id: 's2', correct: 'DESC' }, { type: 'text', text: ';' } ]
+                ],
+                chips: [
+                    { val: 'ORDER BY', type: 'keyword' },
+                    { val: 'DESC', type: 'keyword' },
+                    { val: 'GROUP BY', type: 'keyword' },
+                    { val: 'ASC', type: 'keyword' },
+                    { val: 'SORT BY', type: 'keyword' },
+                    { val: 'FROM', type: 'keyword' },
+                    { val: 'HAVING', type: 'keyword' },
+                    { val: 'TOP', type: 'keyword' }
+                ],
+                resultOutput: {
+                    columns: ["Descrizione", "Prezzo"],
+                    rows: [
+                        ["Computer Desktop", "800.00 €"],
+                        ["Monitor HD", "180.00 €"],
+                        ["Tastiera USB", "25.00 €"],
+                        ["Mouse Ottico", "15.00 €"]
+                    ]
+                }
+            },
+            {
+                id: 5,
+                title: "5. Intervallo di Valori",
+                desc: "Estrarre Numero e Importo delle fatture emesse con importo compreso tra 500 € e 1500 € (estremi inclusi).",
+                tables: [
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura", "Data", "Importo"],
+                        rows: [
+                            [101, "10/01/2026", "300 €"],
+                            [102, "12/01/2026", "800 €"],
+                            [103, "15/01/2026", "1200 €"],
+                            [104, "18/01/2026", "2500 €"]
+                        ],
+                        highlightIndices: [1, 2]
+                    }
+                ],
+                lines: [
+                    [ { type: 'keyword', text: 'SELECT' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'NumFattura, Importo' } ],
+                    [ { type: 'keyword', text: 'FROM' } ],
+                    [ { type: 'indent' }, { type: 'table', text: 'Fatture' } ],
+                    [ { type: 'keyword', text: 'WHERE' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Importo' }, { type: 'text', text: ' ' }, { type: 'slot', id: 's1', correct: 'BETWEEN' }, { type: 'value', text: ' 500 ' }, { type: 'slot', id: 's2', correct: 'AND' }, { type: 'value', text: ' 1500;' } ]
+                ],
+                chips: [
+                    { val: 'BETWEEN', type: 'keyword' },
+                    { val: 'AND', type: 'keyword' },
+                    { val: 'OR', type: 'keyword' },
+                    { val: 'IN', type: 'operator' },
+                    { val: 'LIKE', type: 'operator' },
+                    { val: 'TO', type: 'keyword' },
+                    { val: 'WHERE', type: 'keyword' },
+                    { val: 'WITHIN', type: 'keyword' }
+                ],
+                resultOutput: {
+                    columns: ["NumFattura", "Importo"],
+                    rows: [
+                        [102, "800 €"],
+                        [103, "1200 €"]
+                    ]
+                }
+            },
+            {
+                id: 6,
+                title: "6. Congiunzione tra Tabelle",
+                desc: "Unire la tabella Clienti e la tabella Fatture per associare a ciascuna fattura la Ragione Sociale del rispettivo cliente.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["IDCliente", "RagioneSociale"],
+                        rows: [
+                            [1, "Alfa Spa"],
+                            [2, "Beta Srl"]
+                        ],
+                        highlightIndices: [0, 1]
+                    },
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura", "IDCliente", "Importo"],
+                        rows: [
+                            [1001, 1, "500 €"],
+                            [1002, 2, "1200 €"]
+                        ],
+                        highlightIndices: [0, 1]
+                    }
+                ],
+                lines: [
+                    [ { type: 'keyword', text: 'SELECT' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Clienti.RagioneSociale, Fatture.NumFattura' } ],
+                    [ { type: 'keyword', text: 'FROM' } ],
+                    [ { type: 'indent' }, { type: 'table', text: 'Clienti' } ],
+                    [ { type: 'slot', id: 's1', correct: 'INNER JOIN' }, { type: 'table', text: ' Fatture' } ],
+                    [ { type: 'slot', id: 's2', correct: 'ON' } ],
+                    [ { type: 'indent' }, { type: 'column', text: 'Clienti.IDCliente' }, { type: 'operator', text: ' =' }, { type: 'column', text: ' Fatture.IDCliente;' } ]
+                ],
+                chips: [
+                    { val: 'INNER JOIN', type: 'keyword' },
+                    { val: 'ON', type: 'keyword' },
+                    { val: 'WHERE', type: 'keyword' },
+                    { val: 'JOIN', type: 'keyword' },
+                    { val: 'LEFT JOIN', type: 'keyword' },
+                    { val: 'GROUP BY', type: 'keyword' },
+                    { val: 'USING', type: 'keyword' },
+                    { val: 'CROSS JOIN', type: 'keyword' },
+                    { val: '=', type: 'operator' }
+                ],
+                resultOutput: {
+                    columns: ["RagioneSociale", "NumFattura"],
+                    rows: [
+                        ["Alfa Spa", 1001],
+                        ["Beta Srl", 1002]
+                    ]
+                }
+            }
+        ];
+
+        // State variables
+        let currentQuestionIdx = 0;
+        let score = 0;
+        let slotState = {}; 
+        let studentName = "";
+        let studentClass = "4ª AFM";
+        
+        // Tracking details for final PDF report
+        let exerciseLogs = quizData.map((q) => ({
+            id: q.id,
+            title: q.title,
+            attempts: 0,
+            status: 'Non Svolto',
+            scoreEarned: 0,
+            userQuery: ''
+        }));
+
+        // Helper for element type styling
+        function getPartColorClass(type) {
+            switch(type) {
+                case 'keyword': return 'text-purple-400 font-bold';
+                case 'table': return 'text-sky-300 font-bold';
+                case 'column': return 'text-amber-300 font-semibold';
+                case 'operator': return 'text-rose-300 font-bold';
+                case 'value': return 'text-emerald-300 font-mono';
+                default: return 'text-slate-200';
+            }
+        }
+
+        function getChipClasses(type) {
+            switch(type) {
+                case 'keyword':
+                    return 'bg-purple-950/90 text-purple-300 border-purple-600/80 hover:bg-purple-900 shadow-purple-950/40';
+                case 'table':
+                    return 'bg-sky-950/90 text-sky-300 border-sky-600/80 hover:bg-sky-900 shadow-sky-950/40';
+                case 'column':
+                    return 'bg-amber-950/90 text-amber-300 border-amber-600/80 hover:bg-amber-900 shadow-amber-950/40';
+                case 'operator':
+                    return 'bg-rose-950/90 text-rose-300 border-rose-600/80 hover:bg-rose-900 shadow-rose-950/40';
+                case 'value':
+                    return 'bg-emerald-950/90 text-emerald-300 border-emerald-600/80 hover:bg-emerald-900 shadow-emerald-950/40';
+                default:
+                    return 'bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700';
+            }
+        }
+
+        // Init App
+        window.onload = () => {
+            loadQuestion(currentQuestionIdx);
+        };
+
+        function updateStudentInfo() {
+            studentName = document.getElementById('student-name-input').value.trim();
+            studentClass = document.getElementById('student-class-input').value.trim() || '4ª AFM';
+        }
+
+        function loadQuestion(idx) {
+            const quiz = quizData[idx];
+            slotState = {};
+
+            // UI Header updates
+            document.getElementById('quiz-progress-text').innerText = `${idx + 1} / ${quizData.length}`;
+            document.getElementById('score-text').innerText = `${score} pt`;
+            document.getElementById('scenario-title').innerText = quiz.title;
+            document.getElementById('scenario-desc').innerText = quiz.desc;
+
+            // Render Database Tables
+            renderTables(quiz.tables);
+
+            // Render Query Builder & Slots (Vertical Line-by-Line Structure)
+            renderQueryBuilder(quiz.lines);
+
+            // Render Chips
+            renderChips(quiz.chips);
+
+            // Hide feedback panel
+            const fbPanel = document.getElementById('feedback-panel');
+            fbPanel.classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('result-table-box').classList.add('hidden');
+
+            const nextBtnText = document.getElementById('next-btn-text');
+            if (idx === quizData.length - 1) {
+                nextBtnText.innerText = "Completa e Genera Report PDF";
+            } else {
+                nextBtnText.innerText = "Prossima Scheda";
+            }
+        }
+
+        function renderTables(tables, highlight = false) {
+            const container = document.getElementById('db-tables-container');
+            container.innerHTML = '';
+
+            tables.forEach(table => {
+                const box = document.createElement('div');
+                box.className = 'bg-slate-900 border border-slate-700/80 rounded-xl overflow-hidden shadow-sm';
+
+                let tableHtml = `
+                    <div class="bg-sky-950/90 px-3 py-2 border-b border-sky-800/60 flex justify-between items-center">
+                        <span class="font-mono-code text-xs font-bold text-sky-300 flex items-center gap-2">
+                            <i class="fa-solid fa-table text-sky-400"></i> Tabella: ${table.name}
+                        </span>
+                        <span class="text-[10px] text-sky-400/80 font-semibold">${table.rows.length} record</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-amber-300 uppercase font-mono-code text-[11px] border-b border-slate-800">
+                                <tr>
+                                    ${table.columns.map(col => `<th class="px-3 py-2 border-r border-slate-800/80 font-bold"><i class="fa-solid fa-columns text-amber-500/50 text-[10px] mr-1"></i>${col}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 font-mono-code">
+                `;
+
+                table.rows.forEach((row, rowIdx) => {
+                    const isHighlighted = highlight && table.highlightIndices && table.highlightIndices.includes(rowIdx);
+                    const rowClass = isHighlighted ? 'highlight-row font-semibold' : 'hover:bg-slate-800/40';
+
+                    tableHtml += `<tr class="${rowClass} transition">`;
+                    row.forEach(cell => {
+                        tableHtml += `<td class="px-3 py-2 border-r border-slate-800/30">${cell}</td>`;
+                    });
+                    tableHtml += `</tr>`;
+                });
+
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                box.innerHTML = tableHtml;
+                container.appendChild(box);
+            });
+        }
+
+        function renderQueryBuilder(lines) {
+            const container = document.getElementById('query-builder-area');
+            container.innerHTML = '';
+
+            lines.forEach((lineTokens, lineIdx) => {
+                const lineRow = document.createElement('div');
+                lineRow.className = 'flex items-center gap-2 py-1 w-full border-l-2 border-transparent hover:border-indigo-500/40 pl-1 transition';
+
+                // Line Number
+                const lineNum = document.createElement('span');
+                lineNum.className = 'text-slate-600 text-xs font-mono-code w-6 select-none text-right pr-2 border-r border-slate-800/80 mr-1 font-bold';
+                lineNum.innerText = lineIdx + 1;
+                lineRow.appendChild(lineNum);
+
+                // Line Content Wrapper
+                const lineContent = document.createElement('div');
+                lineContent.className = 'flex items-center flex-wrap gap-2 text-base font-mono-code flex-grow';
+
+                lineTokens.forEach(part => {
+                    if (part.type === 'indent') {
+                        const indent = document.createElement('span');
+                        indent.className = 'w-5 inline-block';
+                        lineContent.appendChild(indent);
+                    } else if (part.type !== 'slot') {
+                        const span = document.createElement('span');
+                        span.className = getPartColorClass(part.type);
+                        span.innerText = part.text;
+                        lineContent.appendChild(span);
+                    } else {
+                        const slot = document.createElement('div');
+                        slot.id = `slot-${part.id}`;
+                        slot.dataset.slotId = part.id;
+                        slot.className = 'slot-target inline-flex items-center justify-center px-3 py-1 rounded-xl border-2 border-dashed border-slate-600 bg-slate-800/80 text-slate-400 cursor-pointer text-sm font-bold hover:border-indigo-500 transition shadow-inner';
+                        
+                        slot.innerHTML = `<span class="text-xs text-slate-500 font-mono-code">[ Slot ]</span>`;
+                        
+                        slot.onclick = () => onSlotClick(part.id);
+                        lineContent.appendChild(slot);
+                    }
+                });
+
+                lineRow.appendChild(lineContent);
+                container.appendChild(lineRow);
+            });
+        }
+
+        function renderChips(chips) {
+            const palette = document.getElementById('chips-palette');
+            palette.innerHTML = '';
+
+            chips.forEach((chipObj, i) => {
+                const chip = document.createElement('div');
+                chip.id = `chip-${i}`;
+                chip.dataset.val = chipObj.val;
+                
+                const chipStyle = getChipClasses(chipObj.type);
+                chip.className = `chip px-3.5 py-1.5 rounded-lg font-mono-code font-bold text-xs shadow-md border flex items-center gap-1.5 ${chipStyle}`;
+                chip.innerText = chipObj.val;
+                
+                chip.onclick = () => onChipClick(chipObj, chip);
+                palette.appendChild(chip);
+            });
+        }
+
+        function onChipClick(chipObj, chipElem) {
+            const quiz = quizData[currentQuestionIdx];
+            const slots = [];
+            quiz.lines.forEach(line => {
+                line.forEach(part => {
+                    if (part.type === 'slot') slots.push(part);
+                });
+            });
+
+            let emptySlot = slots.find(s => !slotState[s.id]);
+            if (emptySlot) {
+                fillSlot(emptySlot.id, chipObj);
+            }
+        }
+
+        function onSlotClick(slotId) {
+            if (slotState[slotId]) {
+                clearSlot(slotId);
+            }
+        }
+
+        function fillSlot(slotId, chipObj) {
+            slotState[slotId] = chipObj;
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            const chipStyle = getChipClasses(chipObj.type);
+            
+            slotElem.className = `slot-target inline-flex items-center justify-center px-3.5 py-1 rounded-xl font-mono-code font-bold text-sm shadow-lg border-2 transition ${chipStyle}`;
+            slotElem.innerHTML = `<span>${chipObj.val}</span> <i class="fa-solid fa-xmark text-xs ml-2 opacity-70 hover:opacity-100"></i>`;
+
+            updateChipsPaletteVisuals();
+        }
+
+        function clearSlot(slotId) {
+            delete slotState[slotId];
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3 py-1 rounded-xl border-2 border-dashed border-slate-600 bg-slate-800/80 text-slate-400 cursor-pointer text-sm font-bold hover:border-indigo-500 transition shadow-inner';
+            slotElem.innerHTML = `<span class="text-xs text-slate-500 font-mono-code">[ Slot ]</span>`;
+
+            updateChipsPaletteVisuals();
+        }
+
+        function clearAllSlots() {
+            slotState = {};
+            const quiz = quizData[currentQuestionIdx];
+            quiz.lines.forEach(line => {
+                line.forEach(part => {
+                    if (part.type === 'slot') clearSlot(part.id);
+                });
+            });
+        }
+
+        function updateChipsPaletteVisuals() {
+            const usedChips = Object.values(slotState);
+            const palette = document.getElementById('chips-palette');
+            const chipsElems = palette.children;
+
+            const usedValues = usedChips.map(c => c.val);
+
+            Array.from(chipsElems).forEach(chip => {
+                const val = chip.dataset.val;
+                const isUsed = usedValues.includes(val);
+                
+                if (isUsed) {
+                    chip.classList.add('opacity-30', 'pointer-events-none', 'scale-95');
+                } else {
+                    chip.classList.remove('opacity-30', 'pointer-events-none', 'scale-95');
+                }
+            });
+        }
+
+        function verifyAnswer() {
+            const quiz = quizData[currentQuestionIdx];
+            const slots = [];
+            quiz.lines.forEach(line => {
+                line.forEach(part => {
+                    if (part.type === 'slot') slots.push(part);
+                });
+            });
+            const log = exerciseLogs[currentQuestionIdx];
+            
+            log.attempts++;
+
+            let isComplete = true;
+            let isCorrect = true;
+
+            slots.forEach(s => {
+                if (!slotState[s.id]) {
+                    isComplete = false;
+                } else if (slotState[s.id].val !== s.correct) {
+                    isCorrect = false;
+                }
+            });
+
+            const fbPanel = document.getElementById('feedback-panel');
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbTitle = document.getElementById('feedback-title');
+            const fbText = document.getElementById('feedback-text');
+            const resultBox = document.getElementById('result-table-box');
+            const nextBtn = document.getElementById('next-btn');
+
+            fbPanel.classList.remove('hidden');
+
+            if (!isComplete) {
+                playSound('error');
+                fbPanel.className = 'bg-amber-950/40 border border-amber-600/50 rounded-2xl p-5 shadow-xl transition-all';
+                fbIcon.className = 'p-2.5 rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                fbTitle.className = 'font-bold text-lg text-amber-300 mb-1';
+                fbTitle.innerText = 'Istruzione SQL Incompleta';
+                fbText.innerText = 'Completare tutti gli spazi della query prima dell\'esecuzione.';
+                resultBox.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            if (isCorrect) {
+                playSound('success');
+                
+                if (log.status !== 'Superato') {
+                    const earned = log.attempts === 1 ? 15 : 10;
+                    score += earned;
+                    log.scoreEarned = earned;
+                    log.status = 'Superato';
+                }
+                
+                document.getElementById('score-text').innerText = `${score} pt`;
+
+                fbPanel.className = 'bg-emerald-950/40 border border-emerald-600/50 rounded-2xl p-5 shadow-xl transition-all';
+                fbIcon.className = 'p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                fbTitle.className = 'font-bold text-lg text-emerald-300 mb-1';
+                fbTitle.innerText = 'Esecuzione SQL Riuscita';
+                fbText.innerText = 'Query eseguita correttamente. I dati sono stati estratti dal Database.';
+
+                renderTables(quiz.tables, true);
+                renderResultTable(quiz.resultOutput);
+                resultBox.classList.remove('hidden');
+
+                nextBtn.classList.remove('hidden');
+                nextBtn.classList.add('flex');
+            } else {
+                playSound('error');
+                log.status = 'Non Superato';
+                fbPanel.className = 'bg-rose-950/40 border border-rose-600/50 rounded-2xl p-5 shadow-xl transition-all';
+                fbIcon.className = 'p-2.5 rounded-xl bg-rose-500/20 text-rose-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                fbTitle.className = 'font-bold text-lg text-rose-300 mb-1';
+                fbTitle.innerText = 'Errore di Esecuzione Database';
+                fbText.innerText = 'Sintassi non valida o clausole errate per i requisiti specificati.';
+                resultBox.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function renderResultTable(output) {
+            const head = document.getElementById('result-table-head');
+            const body = document.getElementById('result-table-body');
+
+            head.innerHTML = `<tr>${output.columns.map(c => `<th class="px-3 py-2 border-b border-slate-800">${c}</th>`).join('')}</tr>`;
+            
+            body.innerHTML = output.rows.map(row => `
+                <tr class="hover:bg-slate-800/50">
+                    ${row.map(cell => `<td class="px-3 py-2 text-emerald-300 font-semibold">${cell}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIdx < quizData.length - 1) {
+                currentQuestionIdx++;
+                loadQuestion(currentQuestionIdx);
+            } else {
+                generatePrintableReport();
+            }
+        }
+
+        function resetCurrentQuiz() {
+            loadQuestion(currentQuestionIdx);
+        }
+
+        function generatePrintableReport() {
+            updateStudentInfo();
+            if (!studentName) {
+                studentName = prompt("Inserisci il tuo Nome e Cognome per la scheda di stampa:", "Studente AFM") || "Studente AFM";
+                document.getElementById('student-name-input').value = studentName;
+            }
+
+            // Hide Interactive area & Header
+            document.getElementById('main-interactive-area').classList.add('hidden');
+            
+            // Show Report Wrapper
+            const reportWrapper = document.getElementById('print-report-wrapper');
+            reportWrapper.classList.remove('hidden');
+
+            // Populate Report Header Data
+            document.getElementById('report-student-name').innerText = studentName;
+            document.getElementById('report-student-class').innerText = studentClass;
+            document.getElementById('report-score').innerText = `${score} / ${quizData.length * 15} pt`;
+
+            const accuracy = Math.round((score / (quizData.length * 15)) * 100);
+            document.getElementById('report-accuracy').innerText = `${accuracy}%`;
+
+            const now = new Date();
+            document.getElementById('report-timestamp').innerText = `Data: ${now.toLocaleDateString('it-IT')} - ${now.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}`;
+
+            // Populate Report Table
+            const tbody = document.getElementById('report-table-body');
+            tbody.innerHTML = exerciseLogs.map((log, idx) => {
+                const quiz = quizData[idx];
+                const isSuccess = log.status === 'Superato';
+                const statusBadge = isSuccess 
+                    ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">SUPERATO</span>`
+                    : `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">NON SUPERATO</span>`;
+
+                return `
+                    <tr class="border-b border-slate-200">
+                        <td class="p-2.5 border-r border-slate-200 font-bold text-center">${idx + 1}</td>
+                        <td class="p-2.5 border-r border-slate-200 font-sans">
+                            <div class="font-bold text-slate-800">${quiz.title}</div>
+                            <div class="text-[11px] text-slate-500">${quiz.desc}</div>
+                        </td>
+                        <td class="p-2.5 border-r border-slate-200 text-center font-bold">${log.attempts}</td>
+                        <td class="p-2.5 border-r border-slate-200 text-center">${statusBadge}</td>
+                        <td class="p-2.5 text-right font-bold text-slate-800">${log.scoreEarned} pt</td>
+                    </tr>
+                `;
+            }).join('');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToQuiz() {
+            document.getElementById('print-report-wrapper').classList.add('hidden');
+            document.getElementById('main-interactive-area').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
