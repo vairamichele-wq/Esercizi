@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Aggregate & Grouping Visual Lab - 4ª AFM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .slot-target {
+            min-width: 120px;
+            min-height: 42px;
+            transition: all 0.2s ease;
+        }
+        .slot-target.active {
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+        .chip {
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+        .chip:active {
+            transform: translateY(0);
+        }
+
+        /* Scrollbar Personalizzata */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Stampa PDF / Stampa Report Finale */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            header, footer, .no-print {
+                display: none !important;
+            }
+            main {
+                display: block !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-only-container {
+                border: 2px solid #1e293b !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+                border-radius: 12px !important;
+                padding: 24px !important;
+            }
+            .print-only-container * {
+                color: #000000 !important;
+                background: transparent !important;
+                border-color: #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+            .print-only-container h1, 
+            .print-only-container h2, 
+            .print-only-container h3, 
+            .print-only-container #cert-student-name {
+                color: #0f172a !important;
+            }
+            .print-only-container .bg-slate-900,
+            .print-only-container .bg-slate-950,
+            .print-only-container .bg-slate-900\/80 {
+                background-color: #f8fafc !important;
+                border-color: #cbd5e1 !important;
+            }
+            .print-only-container ul li {
+                border-color: #cbd5e1 !important;
+                background-color: #f1f5f9 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+    <!-- Header Navigazione -->
+    <header class="max-w-7xl w-full mx-auto bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-4 mb-6 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-calculator text-2xl"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg md:text-xl text-white tracking-wide">SQL Aggregations Visual Lab</h1>
+                    <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-500/30 font-mono-code uppercase">10 Schede AFM</span>
+                </div>
+                <p class="text-xs text-slate-400">Laboratorio Grafico su Funzioni Aggregate (COUNT, SUM, AVG) con GROUP BY, WHERE e HAVING</p>
+            </div>
+        </div>
+
+        <!-- Indicatori di Progresso e Punteggio -->
+        <div class="flex items-center space-x-3 flex-wrap">
+            <div class="flex items-center space-x-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Scheda</span>
+                <span id="quiz-progress-text" class="font-bold text-indigo-400 font-mono-code text-lg">1 / 10</span>
+            </div>
+            <div class="flex items-center space-x-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Punteggio</span>
+                <span id="score-text" class="font-bold text-emerald-400 font-mono-code text-lg">0 pt</span>
+            </div>
+            <!-- Pulsante Report PDF (Disponibile a fine laboratorio) -->
+            <button onclick="showCompletionModal()" id="header-report-btn" class="hidden px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2" title="Vai al Report Finale">
+                <i class="fa-solid fa-print"></i>
+                <span>Report PDF</span>
+            </button>
+            <button onclick="resetCurrentQuiz()" class="p-2.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition" title="Ricomincia Scheda Corrente">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <!-- Left Column: Scenario Gestionale & Tabelle DB (5 Colonne) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+            
+            <!-- Scheda Scenario -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2 text-indigo-400 font-semibold text-xs tracking-wider uppercase">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Obiettivo di Analisi Dati</span>
+                    </div>
+                </div>
+                <h2 id="scenario-title" class="text-lg font-bold text-white mb-2">Caricamento in corso...</h2>
+                <p id="scenario-desc" class="text-slate-300 text-sm leading-relaxed">...</p>
+            </div>
+
+            <!-- Preview Database del Problema -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2 text-slate-400 font-semibold text-xs tracking-wider uppercase">
+                        <i class="fa-solid fa-table text-indigo-400"></i>
+                        <span>Tabella Dati di Partenza</span>
+                    </div>
+                    <span class="text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono-code">PK = Key 🔑</span>
+                </div>
+
+                <!-- Contenitore Tabelle -->
+                <div id="db-tables-container" class="space-y-4 overflow-y-auto max-h-[420px] pr-1">
+                    <!-- Tabelle generate dinamicamente -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Editor Query SQL & Tasselli (7 Colonne) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+            
+            <!-- Box Editor SQL -->
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                <!-- Header Editor & Legenda Sintassi -->
+                <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                        <span class="ml-2 text-xs font-mono-code text-slate-400">aggregate_query.sql</span>
+                    </div>
+
+                    <!-- Legenda Colorazione SQL -->
+                    <div class="flex items-center space-x-3 text-[11px] font-mono-code bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
+                        <span class="flex items-center gap-1 text-indigo-400 font-bold"><span class="w-2 h-2 rounded-full bg-indigo-400"></span>Clausola</span>
+                        <span class="flex items-center gap-1 text-emerald-400 font-bold"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>Aggregazione</span>
+                        <span class="flex items-center gap-1 text-amber-300 font-semibold"><span class="w-2 h-2 rounded-full bg-amber-300"></span>Campo</span>
+                    </div>
+                </div>
+
+                <!-- Area Righe di Sintassi della Query -->
+                <div class="p-6 font-mono-code text-sm md:text-base leading-relaxed overflow-x-auto min-h-[220px] flex flex-col justify-center space-y-2 text-slate-200" id="query-builder-area">
+                    <!-- Righe e Slot generati dinamicamente -->
+                </div>
+
+                <!-- Barra Pulsanti Azione -->
+                <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between gap-4">
+                    <button onclick="clearAllSlots()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        Svuota Tasselli
+                    </button>
+                    <button id="verify-btn" onclick="verifyAnswer()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i>
+                        Esegui Query SQL
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tavolozza Tasselli Disponibili -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-puzzle-piece text-indigo-400"></i>
+                        Tasselli Disponibili per la Scheda
+                    </h3>
+                    <span class="text-xs text-slate-500">Clicca un tassello per inserirlo nello spazio vuoto</span>
+                </div>
+                
+                <div id="chips-palette" class="flex flex-wrap gap-2.5 min-h-[64px] p-3 bg-slate-950 rounded-xl border border-slate-800/80 items-center">
+                    <!-- Dynamic Chips -->
+                </div>
+            </div>
+
+            <!-- Feedback e Risultato dell'Aggregazione -->
+            <div id="feedback-panel" class="hidden bg-slate-900 border rounded-2xl p-5 shadow-2xl transition-all">
+                <div class="flex items-start space-x-3">
+                    <div id="feedback-icon" class="p-3 rounded-xl text-xl flex-shrink-0 mt-0.5"></div>
+                    <div class="flex-grow">
+                        <h4 id="feedback-title" class="font-bold text-lg mb-1"></h4>
+                        <p id="feedback-text" class="text-sm text-slate-300 leading-relaxed mb-3"></p>
+                        
+                        <!-- Risultato Tabellare Generato -->
+                        <div id="result-table-box" class="hidden mt-4">
+                            <h5 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-table-cells"></i>
+                                Risultato dell'Aggregazione (Output Query)
+                            </h5>
+                            <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                                <table class="w-full text-left text-xs text-slate-300">
+                                    <thead class="bg-slate-900 text-indigo-300 uppercase font-mono-code text-[11px]" id="result-table-head">
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/80 font-mono-code" id="result-table-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Pulsante Avanzamento -->
+                        <div class="mt-5 flex justify-end">
+                            <button id="next-btn" onclick="nextQuestion()" class="hidden px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition items-center gap-2 text-sm">
+                                <span>Prossima Scheda</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl w-full mx-auto mt-6 text-center text-xs text-slate-500 py-3 border-t border-slate-800/60">
+        SQL Aggregate & Grouping Lab — Percorso Didattico sulle Funzioni Aggregate e Raggruppamenti per la classe 4ª AFM
+    </footer>
+
+    <!-- Sintetizzatore Audio Web API per Effetti Sonori -->
+    <script>
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.22);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(190, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch(e) {}
+        };
+    </script>
+
+    <!-- Data e Logica Applicativa (10 Schede Didattiche SQL Aggregazioni) -->
+    <script>
+        const aggregateQuizData = [
+            {
+                id: 1,
+                title: "1. Conteggio delle Fatture Saldate (COUNT e WHERE)",
+                desc: "L'ufficio amministrazione vuole sapere quante fatture hanno lo stato 'Saldata' all'interno del registro contabile.",
+                tables: [
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura (PK 🔑)", "Cliente", "Importo", "Stato"],
+                        rows: [
+                            [101, "Alfa Spa", "1200 €", "Saldata"],
+                            [102, "Beta Srl", "850 €", "In Attesa"],
+                            [103, "Gamma Snc", "2300 €", "Saldata"],
+                            [104, "Delta Srl", "400 €", "Saldata"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'slot', id: 's1', correct: 'COUNT(NumFattura)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Fatture' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: 'Stato' },
+                        { type: 'text', text: " = 'Saldata';" }
+                    ]
+                ],
+                chips: ['COUNT(NumFattura)', 'SUM(Importo)', 'WHERE', 'HAVING', 'GROUP BY', 'AVG(Importo)'],
+                resultOutput: {
+                    columns: ["COUNT(NumFattura)"],
+                    rows: [
+                        [3]
+                    ]
+                },
+                explanation: "Ottimo! La funzione COUNT conteggia le righe selezionate, mentre la clausola WHERE applica il filtro sulle sole fatture con Stato 'Saldata' PRIMA del calcolo."
+            },
+            {
+                id: 2,
+                title: "2. Totale Fatturato per la Sede di Milano (SUM e WHERE)",
+                desc: "Calcolare la somma totale degli importi (SUM) delle fatture emesse verso i clienti ubicati nella città di Milano.",
+                tables: [
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura (PK 🔑)", "Cliente", "Citta", "Importo"],
+                        rows: [
+                            [501, "Lombardia Tech", "Milano", "3000 €"],
+                            [502, "Roma Trade", "Roma", "1500 €"],
+                            [503, "Milano Design", "Milano", "4500 €"],
+                            [504, "Torino Motors", "Torino", "2000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'slot', id: 's1', correct: 'SUM(Importo)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Fatture' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: 'Citta' },
+                        { type: 'text', text: " = 'Milano';" }
+                    ]
+                ],
+                chips: ['SUM(Importo)', 'AVG(Importo)', 'WHERE', 'HAVING', 'COUNT(*)', 'GROUP BY'],
+                resultOutput: {
+                    columns: ["SUM(Importo)"],
+                    rows: [
+                        ["7500 €"]
+                    ]
+                },
+                explanation: "Bravissimo! SUM(Importo) calcola il totale algebrico numerico degli importi per i soli record appartenenti alla città di Milano."
+            },
+            {
+                id: 3,
+                title: "3. Importo Medio Ordini Hardware (AVG e WHERE)",
+                desc: "L'ufficio acquisti desidera determinare il valore medio (AVG) per gli ordini appartenenti alla categoria 'Hardware'.",
+                tables: [
+                    {
+                        name: "Ordini",
+                        columns: ["IDOrdine (PK 🔑)", "Categoria", "Importo"],
+                        rows: [
+                            [1, "Hardware", "1000 €"],
+                            [2, "Software", "500 €"],
+                            [3, "Hardware", "2000 €"],
+                            [4, "Hardware", "1500 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'slot', id: 's1', correct: 'AVG(Importo)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Ordini' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: 'Categoria' },
+                        { type: 'text', text: " = 'Hardware';" }
+                    ]
+                ],
+                chips: ['AVG(Importo)', 'SUM(Importo)', 'WHERE', 'GROUP BY', 'HAVING', 'COUNT(IDOrdine)'],
+                resultOutput: {
+                    columns: ["AVG(Importo)"],
+                    rows: [
+                        ["1500 €"]
+                    ]
+                },
+                explanation: "Perfetto! La funzione AVG calcola la media aritmetica ( (1000 + 2000 + 1500) / 3 = 1500 € ) per i prodotti filtrati con WHERE."
+            },
+            {
+                id: 4,
+                title: "4. Totale Vendite Raggruppate per Agente (GROUP BY e SUM)",
+                desc: "Raggruppare i contratti stipulati per ciascun Agente commerciale e calcolare il valore totale delle vendite conseguite.",
+                tables: [
+                    {
+                        name: "Contratti",
+                        columns: ["IDContratto (PK 🔑)", "Agente", "Valore"],
+                        rows: [
+                            [201, "Marco Rossi", "10000 €"],
+                            [202, "Elena Bianchi", "15000 €"],
+                            [203, "Marco Rossi", "8000 €"],
+                            [204, "Elena Bianchi", "12000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Agente' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'SUM(Valore)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Contratti' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'GROUP BY' },
+                        { type: 'column', text: 'Agente' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['SUM(Valore)', 'GROUP BY', 'HAVING', 'WHERE', 'COUNT(IDContratto)', 'ORDER BY'],
+                resultOutput: {
+                    columns: ["Agente", "SUM(Valore)"],
+                    rows: [
+                        ["Marco Rossi", "18000 €"],
+                        ["Elena Bianchi", "27000 €"]
+                    ]
+                },
+                explanation: "Eccellente! GROUP BY raggruppa tutte le righe appartenenti allo stesso agente ed esegue la somma SUM(Valore) separatamente per ogni gruppo."
+            },
+            {
+                id: 5,
+                title: "5. Numero Articoli Disponibili per Categoria (WHERE, GROUP BY e COUNT)",
+                desc: "Considerare soltanto gli articoli in magazzino con Giacenza maggiore di 0. Raggrupparli per Categoria e contare il numero di articoli per ciascuna.",
+                tables: [
+                    {
+                        name: "Prodotti",
+                        columns: ["CodProdotto (PK 🔑)", "Categoria", "Giacenza"],
+                        rows: [
+                            ["P-01", "Informatica", 15],
+                            ["P-02", "Cancelleria", 0],
+                            ["P-03", "Informatica", 8],
+                            ["P-04", "Cancelleria", 50]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Categoria' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'COUNT(CodProdotto)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Prodotti' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: 'Giacenza' },
+                        { type: 'text', text: ' > 0' }
+                    ],
+                    [
+                        { type: 'slot', id: 's3', correct: 'GROUP BY' },
+                        { type: 'column', text: 'Categoria' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['COUNT(CodProdotto)', 'WHERE', 'GROUP BY', 'HAVING', 'SUM(Giacenza)', 'AVG(Giacenza)'],
+                resultOutput: {
+                    columns: ["Categoria", "COUNT(CodProdotto)"],
+                    rows: [
+                        ["Informatica", 2],
+                        ["Cancelleria", 1]
+                    ]
+                },
+                explanation: "Impeccabile! Il filtro WHERE esclude l'articolo P-02 con giacenza 0 prima che il GROUP BY raggruppi le righe residue per Categoria."
+            },
+            {
+                id: 6,
+                title: "6. Filtro sui Clienti Top Fatturato (GROUP BY, SUM e HAVING)",
+                desc: "Raggruppare le fatture per Cliente, calcolare la somma totale degli importi e mostrare SOLO i clienti con un fatturato complessivo superiore a 5.000 €.",
+                tables: [
+                    {
+                        name: "Fatture",
+                        columns: ["NumFattura (PK 🔑)", "Cliente", "Importo"],
+                        rows: [
+                            [301, "Alfa Spa", "4000 €"],
+                            [302, "Beta Srl", "1500 €"],
+                            [303, "Alfa Spa", "3000 €"],
+                            [304, "Beta Srl", "1000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Cliente' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'SUM(Importo)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Fatture' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'GROUP BY' },
+                        { type: 'column', text: 'Cliente' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'HAVING' },
+                        { type: 'slot', id: 's3', correct: 'SUM(Importo)' },
+                        { type: 'text', text: ' > 5000;' }
+                    ]
+                ],
+                chips: ['SUM(Importo)', 'HAVING', 'WHERE', 'GROUP BY', 'COUNT(*)', 'AVG(Importo)'],
+                resultOutput: {
+                    columns: ["Cliente", "SUM(Importo)"],
+                    rows: [
+                        ["Alfa Spa", "7000 €"]
+                    ]
+                },
+                explanation: "Fantastico! Hai usato correttamente HAVING! Ricorda: si usa WHERE per filtrare le singole righe e HAVING per filtrare i gruppi in base al valore calcolato dall'aggregazione (SUM > 5000)."
+            },
+            {
+                id: 7,
+                title: "7. Reparti con Stipendio Medio Elevato (GROUP BY, AVG e HAVING)",
+                desc: "Calcolare lo stipendio medio (AVG) per ciascun Reparto aziendale e mostrare soltanto i reparti che registrano una media superiore a 2.500 €.",
+                tables: [
+                    {
+                        name: "Dipendenti",
+                        columns: ["IDDip (PK 🔑)", "Nome", "Reparto", "Stipendio"],
+                        rows: [
+                            [1, "Mario Rossi", "Amministrazione", "2800 €"],
+                            [2, "Luigi Bianchi", "Vendite", "1800 €"],
+                            [3, "Anna Verdi", "Amministrazione", "3000 €"],
+                            [4, "Carla Neri", "Vendite", "2000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Reparto' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'AVG(Stipendio)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Dipendenti' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'GROUP BY' },
+                        { type: 'column', text: 'Reparto' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'HAVING' },
+                        { type: 'slot', id: 's3', correct: 'AVG(Stipendio)' },
+                        { type: 'text', text: ' > 2500;' }
+                    ]
+                ],
+                chips: ['AVG(Stipendio)', 'HAVING', 'WHERE', 'GROUP BY', 'SUM(Stipendio)', 'COUNT(IDDip)'],
+                resultOutput: {
+                    columns: ["Reparto", "AVG(Stipendio)"],
+                    rows: [
+                        ["Amministrazione", "2900 €"]
+                    ]
+                },
+                explanation: "Ottimo lavoro! Il reparto 'Amministrazione' (media 2.900 €) supera la soglia specificata nella clausola HAVING, mentre 'Vendite' (media 1.900 €) viene escluso."
+            },
+            {
+                id: 8,
+                title: "8. Analisi Grandi Commesse per Area (WHERE, GROUP BY e HAVING)",
+                desc: "Considerare solo le vendite registrate nel 2026 (WHERE), raggrupparle per Area (GROUP BY) ed estrarre le aree con più di 2 contratti stipulati (HAVING).",
+                tables: [
+                    {
+                        name: "Vendite",
+                        columns: ["IDVendita (PK 🔑)", "Area", "Anno", "Importo"],
+                        rows: [
+                            [10, "Nord", 2026, "5000 €"],
+                            [11, "Nord", 2026, "3000 €"],
+                            [12, "Nord", 2026, "4000 €"],
+                            [13, "Sud", 2026, "2000 €"],
+                            [14, "Nord", 2025, "9000 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Area' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'COUNT(IDVendita)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Vendite' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: 'Anno' },
+                        { type: 'text', text: ' = 2026' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'GROUP BY' },
+                        { type: 'column', text: 'Area' }
+                    ],
+                    [
+                        { type: 'slot', id: 's3', correct: 'HAVING' },
+                        { type: 'slot', id: 's4', correct: 'COUNT(IDVendita)' },
+                        { type: 'text', text: ' > 2;' }
+                    ]
+                ],
+                chips: ['COUNT(IDVendita)', 'WHERE', 'HAVING', 'GROUP BY', 'SUM(Importo)', 'AVG(Importo)'],
+                resultOutput: {
+                    columns: ["Area", "COUNT(IDVendita)"],
+                    rows: [
+                        ["Nord", 3]
+                    ]
+                },
+                explanation: "Esatto! La query filtra prima l'anno 2026 tramite WHERE, raggruppa per Area e infine filtra i gruppi con HAVING COUNT(...) > 2."
+            },
+            {
+                id: 9,
+                title: "9. Dashboard Multi-Aggregazione per Categoria (COUNT, SUM, AVG)",
+                desc: "Generare un report completo per ogni Categoria merci indicando: il numero totale di prodotti (COUNT), il fatturato cumulato (SUM) ed il valore medio di vendita (AVG).",
+                tables: [
+                    {
+                        name: "Prodotti",
+                        columns: ["CodArt (PK 🔑)", "Categoria", "Prezzo"],
+                        rows: [
+                            ["A1", "Elettronica", "500 €"],
+                            ["A2", "Elettronica", "300 €"],
+                            ["B1", "Arredamento", "200 €"],
+                            ["B2", "Arredamento", "400 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Categoria' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'COUNT(CodArt)' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's2', correct: 'SUM(Prezzo)' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's3', correct: 'AVG(Prezzo)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Prodotti' }
+                    ],
+                    [
+                        { type: 'slot', id: 's4', correct: 'GROUP BY' },
+                        { type: 'column', text: 'Categoria' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['COUNT(CodArt)', 'SUM(Prezzo)', 'AVG(Prezzo)', 'GROUP BY', 'HAVING', 'WHERE'],
+                resultOutput: {
+                    columns: ["Categoria", "COUNT(CodArt)", "SUM(Prezzo)", "AVG(Prezzo)"],
+                    rows: [
+                        ["Elettronica", 2, "800 €", "400 €"],
+                        ["Arredamento", 2, "600 €", "300 €"]
+                    ]
+                },
+                explanation: "Superbo! È possibile inserire più funzioni aggregate (COUNT, SUM, AVG) nella medesima clausola SELECT."
+            },
+            {
+                id: 10,
+                title: "10. Audit Spese Approvate per Reparto (WHERE, GROUP BY, SUM e HAVING)",
+                desc: "Considerare solo i giustificativi di spesa con Stato 'Approvato', raggrupparli per Reparto e mostrare solo i reparti la cui spesa complessiva (SUM) supera i 1.000 €.",
+                tables: [
+                    {
+                        name: "Spese",
+                        columns: ["IDSpesa (PK 🔑)", "Reparto", "Importo", "Stato"],
+                        rows: [
+                            [1, "Marketing", "800 €", "Approvato"],
+                            [2, "Marketing", "500 €", "Approvato"],
+                            [3, "IT", "1200 €", "Approvato"],
+                            [4, "IT", "400 €", "Respinto"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'SELECT' },
+                        { type: 'column', text: 'Reparto' },
+                        { type: 'text', text: ', ' },
+                        { type: 'slot', id: 's1', correct: 'SUM(Importo)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'FROM' },
+                        { type: 'table', text: 'Spese' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: 'Stato' },
+                        { type: 'text', text: " = 'Approvato'" }
+                    ],
+                    [
+                        { type: 'slot', id: 's3', correct: 'GROUP BY' },
+                        { type: 'column', text: 'Reparto' }
+                    ],
+                    [
+                        { type: 'slot', id: 's4', correct: 'HAVING' },
+                        { type: 'slot', id: 's5', correct: 'SUM(Importo)' },
+                        { type: 'text', text: ' > 1000;' }
+                    ]
+                ],
+                chips: ['SUM(Importo)', 'WHERE', 'GROUP BY', 'HAVING', 'COUNT(*)', 'AVG(Importo)'],
+                resultOutput: {
+                    columns: ["Reparto", "SUM(Importo)"],
+                    rows: [
+                        ["Marketing", "1300 €"],
+                        ["IT", "1200 €"]
+                    ]
+                },
+                explanation: "Complimenti! Hai superato con successo tutte le 10 schede sulle aggregazioni SQL! Hai dimostrato piena padronanza di COUNT, SUM, AVG, WHERE, GROUP BY e HAVING!"
+            }
+        ];
+
+        // Stato Globale dell'Applicazione
+        let currentIdx = 0;
+        let totalScore = 0;
+        let slotState = {};
+
+        // Inizializzazione Applicazione
+        window.onload = () => {
+            loadQuestion(currentIdx);
+        };
+
+        function loadQuestion(idx) {
+            const quiz = aggregateQuizData[idx];
+            slotState = {};
+
+            // Aggiornamenti Testate e Scenario
+            document.getElementById('quiz-progress-text').innerText = `${idx + 1} / ${aggregateQuizData.length}`;
+            document.getElementById('score-text').innerText = `${totalScore} pt`;
+            document.getElementById('scenario-title').innerText = quiz.title;
+            document.getElementById('scenario-desc').innerText = quiz.desc;
+
+            // Render Interfaccia Grafica
+            renderTables(quiz.tables);
+            renderQueryBuilder(quiz.queryTemplate);
+            renderChips(quiz.chips);
+
+            // Reset Pannelli e Controlli
+            const fbPanel = document.getElementById('feedback-panel');
+            fbPanel.classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('result-table-box').classList.add('hidden');
+        }
+
+        function renderTables(tables) {
+            const container = document.getElementById('db-tables-container');
+            container.innerHTML = '';
+
+            tables.forEach((table) => {
+                const box = document.createElement('div');
+                box.className = 'bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-md';
+
+                let tableHtml = `
+                    <div class="bg-slate-900/90 px-3.5 py-2 border-b border-slate-800 flex justify-between items-center border-l-4 border-indigo-500">
+                        <span class="font-mono-code text-xs font-bold text-slate-200">${table.name}</span>
+                        <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono-code">${table.rows.length} record</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-900 text-slate-400 uppercase font-mono-code text-[10px] border-b border-slate-800">
+                                <tr>
+                                    ${table.columns.map(col => {
+                                        if (col.includes('PK') || col.includes('🔑')) {
+                                            return `<th class="px-3 py-2 text-amber-300 font-bold bg-amber-500/10 border-r border-slate-800/60">${col}</th>`;
+                                        }
+                                        return `<th class="px-3 py-2 border-r border-slate-800/60">${col}</th>`;
+                                    }).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 font-mono-code">
+                `;
+
+                table.rows.forEach((row) => {
+                    tableHtml += `<tr class="hover:bg-slate-800/40 transition">`;
+                    row.forEach((cell, cellIdx) => {
+                        const colName = table.columns[cellIdx] || '';
+                        let cellStyle = 'px-3 py-2 border-r border-slate-800/40';
+                        if (colName.includes('PK') || colName.includes('🔑')) cellStyle += ' text-amber-200/90 font-bold';
+
+                        tableHtml += `<td class="${cellStyle}">${cell}</td>`;
+                    });
+                    tableHtml += `</tr>`;
+                });
+
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>`;
+                box.innerHTML = tableHtml;
+                container.appendChild(box);
+            });
+        }
+
+        function renderQueryBuilder(templateLines) {
+            const container = document.getElementById('query-builder-area');
+            container.innerHTML = '';
+
+            templateLines.forEach(lineTokens => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'w-full flex items-center flex-wrap gap-2 py-1.5 border-b border-slate-800/40 last:border-b-0';
+
+                lineTokens.forEach(part => {
+                    if (part.type === 'indent') {
+                        const indentSpan = document.createElement('span');
+                        indentSpan.className = 'w-6 inline-block flex-shrink-0';
+                        lineDiv.appendChild(indentSpan);
+                    } else if (part.type === 'keyword') {
+                        const span = document.createElement('span');
+                        span.className = 'text-indigo-400 font-bold';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'table') {
+                        const span = document.createElement('span');
+                        span.className = 'text-purple-300 font-bold bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'column') {
+                        const span = document.createElement('span');
+                        span.className = 'text-amber-300 font-semibold font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'text') {
+                        const span = document.createElement('span');
+                        span.className = 'text-slate-200';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'slot') {
+                        const slot = document.createElement('div');
+                        slot.id = 'slot-' + part.id;
+                        slot.dataset.slotId = part.id;
+                        slot.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/90 text-slate-400 cursor-pointer text-xs font-bold hover:border-indigo-500 transition shadow-inner';
+                        
+                        slot.innerHTML = '<span class="text-xs text-slate-500 italic"><i class="fa-solid fa-plus text-[10px] mr-1"></i>Scegli</span>';
+                        slot.onclick = () => onSlotClick(part.id);
+                        lineDiv.appendChild(slot);
+                    }
+                });
+
+                container.appendChild(lineDiv);
+            });
+        }
+
+        function renderChips(chips) {
+            const palette = document.getElementById('chips-palette');
+            palette.innerHTML = '';
+
+            chips.forEach((chipVal, i) => {
+                const chip = document.createElement('div');
+                chip.id = `chip-${i}`;
+                chip.className = 'chip px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono-code font-bold text-xs shadow-md border border-indigo-400/30 flex items-center gap-1.5';
+                chip.innerText = chipVal;
+                
+                chip.onclick = () => onChipClick(chipVal);
+                palette.appendChild(chip);
+            });
+        }
+
+        function onChipClick(val) {
+            const quiz = aggregateQuizData[currentIdx];
+            const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+
+            let emptySlot = slots.find(s => !slotState[s.id]);
+            if (emptySlot) {
+                fillSlot(emptySlot.id, val);
+            }
+        }
+
+        function onSlotClick(slotId) {
+            if (slotState[slotId]) {
+                clearSlot(slotId);
+            }
+        }
+
+        function fillSlot(slotId, val) {
+            slotState[slotId] = val;
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-mono-code font-bold text-xs shadow-lg border border-indigo-400 transition';
+            slotElem.innerHTML = `<span>${val}</span> <i class="fa-solid fa-xmark text-xs ml-2 text-indigo-200 hover:text-white"></i>`;
+
+            updateChipsVisuals();
+        }
+
+        function clearSlot(slotId) {
+            delete slotState[slotId];
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3 py-1.5 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/90 text-slate-400 cursor-pointer text-xs font-bold hover:border-indigo-500 transition shadow-inner';
+            slotElem.innerHTML = `<span class="text-xs text-slate-500 italic"><i class="fa-solid fa-plus text-[10px] mr-1"></i>Scegli</span>`;
+
+            updateChipsVisuals();
+        }
+
+        function clearAllSlots() {
+            slotState = {};
+            const quiz = aggregateQuizData[currentIdx];
+            quiz.queryTemplate.flat().filter(p => p.type === 'slot').forEach(s => {
+                clearSlot(s.id);
+            });
+        }
+
+        function updateChipsVisuals() {
+            const usedValues = Object.values(slotState);
+            const palette = document.getElementById('chips-palette');
+            const chipsElems = palette.children;
+
+            const usedCounts = {};
+            usedValues.forEach(v => usedCounts[v] = (usedCounts[v] || 0) + 1);
+
+            const currentCounts = {};
+            Array.from(chipsElems).forEach(chip => {
+                const val = chip.innerText.trim();
+                currentCounts[val] = (currentCounts[val] || 0) + 1;
+                
+                if (usedCounts[val] && usedCounts[val] >= currentCounts[val]) {
+                    chip.classList.add('opacity-30', 'pointer-events-none', 'scale-95');
+                } else {
+                    chip.classList.remove('opacity-30', 'pointer-events-none', 'scale-95');
+                }
+            });
+        }
+
+        function verifyAnswer() {
+            const quiz = aggregateQuizData[currentIdx];
+            const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+
+            let isComplete = true;
+            let isCorrect = true;
+
+            slots.forEach(s => {
+                if (!slotState[s.id]) {
+                    isComplete = false;
+                } else {
+                    const userVal = slotState[s.id];
+                    if (Array.isArray(s.correct)) {
+                        if (!s.correct.includes(userVal)) isCorrect = false;
+                    } else if (userVal !== s.correct) {
+                        isCorrect = false;
+                    }
+                }
+            });
+
+            const fbPanel = document.getElementById('feedback-panel');
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbTitle = document.getElementById('feedback-title');
+            const fbText = document.getElementById('feedback-text');
+            const resultBox = document.getElementById('result-table-box');
+            const nextBtn = document.getElementById('next-btn');
+
+            fbPanel.classList.remove('hidden');
+
+            if (!isComplete) {
+                playSound('error');
+                fbPanel.className = 'bg-amber-950/40 border border-amber-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                fbTitle.className = 'font-bold text-lg text-amber-300 mb-1';
+                fbTitle.innerText = 'Sintassi Incompleta';
+                fbText.innerText = 'Riempi tutti i tasselli mancanti nella query prima di eseguirla!';
+                resultBox.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            if (isCorrect) {
+                playSound('success');
+
+                if (!quiz.solved) {
+                    quiz.solved = true;
+                    totalScore += 20;
+                    document.getElementById('score-text').innerText = `${totalScore} pt`;
+                }
+
+                fbPanel.className = 'bg-emerald-950/40 border border-emerald-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-emerald-500/20 text-emerald-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                fbTitle.className = 'font-bold text-lg text-emerald-300 mb-1';
+                fbTitle.innerText = 'Query SQL Corretta ed Eseguita con Successo!';
+                fbText.innerText = quiz.explanation;
+
+                renderResultTable(quiz.resultOutput);
+                resultBox.classList.remove('hidden');
+
+                if (currentIdx === aggregateQuizData.length - 1) {
+                    nextBtn.innerHTML = `<span>Visualizza Report Finale e Stampa PDF</span> <i class="fa-solid fa-print"></i>`;
+                    nextBtn.className = "px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 text-sm animate-pulse";
+                    
+                    const headerReportBtn = document.getElementById('header-report-btn');
+                    if (headerReportBtn) headerReportBtn.classList.remove('hidden');
+                } else {
+                    nextBtn.innerHTML = `<span>Prossima Scheda</span> <i class="fa-solid fa-arrow-right"></i>`;
+                    nextBtn.className = "px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center gap-2 text-sm";
+                }
+
+                nextBtn.classList.remove('hidden');
+                nextBtn.classList.add('flex');
+            } else {
+                playSound('error');
+                fbPanel.className = 'bg-rose-950/40 border border-rose-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-rose-500/20 text-rose-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                fbTitle.className = 'font-bold text-lg text-rose-300 mb-1';
+                fbTitle.innerText = 'Errore di Logica SQL nell\'Aggregazione';
+                fbText.innerText = 'Uno o più tasselli selezionati non rispettano la logica delle funzioni aggregate (COUNT, SUM, AVG) o delle clausole WHERE/GROUP BY/HAVING. Controlla e riprova!';
+                resultBox.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function renderResultTable(output) {
+            const head = document.getElementById('result-table-head');
+            const body = document.getElementById('result-table-body');
+
+            head.innerHTML = `<tr>${output.columns.map(c => `<th class="px-3 py-2 border-b border-slate-800">${c}</th>`).join('')}</tr>`;
+            
+            body.innerHTML = output.rows.map(row => `
+                <tr class="hover:bg-slate-900/60">
+                    ${row.map(cell => `<td class="px-3 py-2 text-emerald-300 font-semibold">${cell}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        function nextQuestion() {
+            if (currentIdx < aggregateQuizData.length - 1) {
+                currentIdx++;
+                loadQuestion(currentIdx);
+            } else {
+                showCompletionModal();
+            }
+        }
+
+        function resetCurrentQuiz() {
+            loadQuestion(currentIdx);
+        }
+
+        function showCompletionModal() {
+            const currentDate = new Date().toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            const main = document.querySelector('main');
+            main.innerHTML = `
+                <div class="col-span-12 max-w-4xl mx-auto w-full my-4 md:my-8">
+                    
+                    <!-- Form Dati Studente (Nascosto durante la stampa) -->
+                    <div class="no-print bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl mb-6">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="bg-emerald-500/20 text-emerald-400 p-3 rounded-xl border border-emerald-500/30">
+                                <i class="fa-solid fa-file-signature text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Generazione Report per Google Classroom</h2>
+                                <p class="text-xs text-slate-400">Compila i tuoi dati personali per generare la scheda di consegna ufficiale ed esportare il PDF.</p>
+                            </div>
+                        </div>
+
+                        <!-- Avviso Campi Obbligatori -->
+                        <div id="print-warning" class="hidden mb-4 p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-sm"></i>
+                            <span>Compila sia il Nome che il Cognome prima di stampare il report!</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome Studente *</label>
+                                <input type="text" id="student-firstname" placeholder="Es. Mario" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Cognome Studente *</label>
+                                <input type="text" id="student-lastname" placeholder="Es. Rossi" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Classe</label>
+                                <input type="text" id="student-class" value="4ª AFM" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 pt-4">
+                            <button onclick="window.location.reload()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                Ricomincia Laboratorio
+                            </button>
+                            <button onclick="printReport()" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                                <i class="fa-solid fa-print"></i>
+                                Stampa / Salva in PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scheda Report Ufficiale da Stampare -->
+                    <div id="printable-certificate" class="print-only-container bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+                        <div class="border-4 border-indigo-500/30 rounded-2xl p-6 md:p-8 bg-slate-950/60">
+                            
+                            <!-- Header Report -->
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-6 mb-6">
+                                <div>
+                                    <span class="text-xs font-mono-code uppercase font-bold text-indigo-400 tracking-widest block mb-1">Indirizzo Amministrazione, Finanza e Marketing</span>
+                                    <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">Report Valutazione SQL Aggregate Lab</h1>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-slate-400 block font-mono-code">Data Consegna:</span>
+                                    <span class="text-sm font-bold text-slate-200 font-mono-code">${currentDate}</span>
+                                </div>
+                            </div>
+
+                            <!-- Dati Studente e Esito -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-slate-900/80 p-5 rounded-xl border border-slate-800">
+                                <div class="space-y-2">
+                                    <div class="text-xs text-slate-400 uppercase font-semibold">Candidato / Studente:</div>
+                                    <div id="cert-student-name" class="text-xl font-bold text-amber-300 tracking-wide">___ ___</div>
+                                    <div class="text-xs text-slate-400">Classe: <span id="cert-student-class" class="text-slate-200 font-bold">4ª AFM</span></div>
+                                </div>
+                                <div class="space-y-2 md:text-right border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-6">
+                                    <div class="text-xs text-slate-400 uppercase font-semibold">Punteggio Totale Conseguito:</div>
+                                    <div class="text-3xl font-bold text-emerald-400 font-mono-code">${totalScore} / ${aggregateQuizData.length * 20} pt</div>
+                                    <div class="text-xs text-slate-300">Schede Completate: <span class="text-emerald-400 font-bold">10 / 10 (100%)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Riepilogo Competenze Verificate -->
+                            <div class="mb-8">
+                                <h3 class="text-xs uppercase font-semibold text-slate-400 tracking-wider mb-3">Competenze Verificate sul Linguaggio SQL:</h3>
+                                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono-code text-slate-300">
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        1. COUNT + WHERE (Conteggio Filtrato)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        2. SUM + WHERE (Somma Filtrata)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        3. AVG + WHERE (Calcolo della Media)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        4. GROUP BY + SUM (Raggruppamento semplice)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        5. WHERE + GROUP BY + COUNT (Filtro prima del raggruppamento)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        6. GROUP BY + SUM + HAVING (Filtro su Somma)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        7. GROUP BY + AVG + HAVING (Filtro su Media)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        8. WHERE + GROUP BY + HAVING (Combinazione Filtri)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        9. Multi-Aggregazione (COUNT, SUM, AVG simultanei)
+                                    </li>
+                                    <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-emerald-400"></i>
+                                        10. Complex Audit (WHERE + GROUP BY + HAVING)
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Blocchi Firme per Consegna -->
+                            <div class="grid grid-cols-2 gap-8 pt-8 border-t border-slate-800 text-center">
+                                <div>
+                                    <div class="h-10 border-b border-dashed border-slate-600 mb-2"></div>
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Firma dello Studente</span>
+                                </div>
+                                <div>
+                                    <div class="h-10 border-b border-dashed border-slate-600 mb-2"></div>
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Firma del Docente</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        }
+
+        function updateCertificate() {
+            const fname = document.getElementById('student-firstname')?.value.trim() || '';
+            const lname = document.getElementById('student-lastname')?.value.trim() || '';
+            const sclass = document.getElementById('student-class')?.value.trim() || '4ª AFM';
+
+            const nameElem = document.getElementById('cert-student-name');
+            const classElem = document.getElementById('cert-student-class');
+
+            if (nameElem) {
+                nameElem.innerText = (fname || lname) ? `${fname} ${lname}`.toUpperCase() : '___ ___';
+            }
+            if (classElem) {
+                classElem.innerText = sclass || '4ª AFM';
+            }
+        }
+
+        function printReport() {
+            const fname = document.getElementById('student-firstname')?.value.trim();
+            const lname = document.getElementById('student-lastname')?.value.trim();
+            const warningBox = document.getElementById('print-warning');
+
+            if (!fname || !lname) {
+                if (warningBox) warningBox.classList.remove('hidden');
+                return;
+            }
+
+            if (warningBox) warningBox.classList.add('hidden');
+            window.print();
+        }
+    </script>
+</body>
+</html>
