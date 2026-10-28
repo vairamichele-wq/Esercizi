@@ -661,7 +661,7 @@
                         { type: 'text', text: ' > 2;' }
                     ]
                 ],
-                chips: ['COUNT(IDVendita)', 'WHERE', 'HAVING', 'GROUP BY', 'SUM(Importo)', 'AVG(Importo)'],
+                chips: ['COUNT(IDVendita)', 'WHERE', 'HAVING', 'GROUP BY', 'COUNT(IDVendita)', 'AVG(Importo)'],
                 resultOutput: {
                     columns: ["Area", "COUNT(IDVendita)"],
                     rows: [
@@ -759,7 +759,7 @@
                         { type: 'text', text: ' > 1000;' }
                     ]
                 ],
-                chips: ['SUM(Importo)', 'WHERE', 'GROUP BY', 'HAVING', 'COUNT(*)', 'AVG(Importo)'],
+                chips: ['SUM(Importo)', 'WHERE', 'GROUP BY', 'HAVING', 'COUNT(*)', 'SUM(Importo)'],
                 resultOutput: {
                     columns: ["Reparto", "SUM(Importo)"],
                     rows: [
