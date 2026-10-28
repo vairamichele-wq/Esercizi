@@ -729,7 +729,7 @@
                         { type: 'text', text: ' > 10000;' }
                     ]
                 ],
-                chips: ['SUM(ValoreTotale)', 'HAVING', 'WHERE', 'GROUP BY', 'COUNT(Codice)', 'AVG(ValoreTotale)'],
+                chips: ['SUM(ValoreTotale)', 'HAVING', 'WHERE', 'GROUP BY', 'COUNT(Codice)', 'SUM(ValoreTotale)'],
                 resultOutput: {
                     columns: ["Magazzino", "SUM(ValoreTotale)"],
                     rows: [
@@ -775,7 +775,7 @@
                         { type: 'text', text: ' > 2;' }
                     ]
                 ],
-                chips: ['COUNT(ID)', 'HAVING', 'WHERE', 'GROUP BY', 'SUM(ID)', 'MAX(ID)'],
+                chips: ['COUNT(ID)', 'HAVING', 'WHERE', 'GROUP BY', 'SUM(ID)', 'COUNT(ID)'],
                 resultOutput: {
                     columns: ["Agente", "COUNT(ID)"],
                     rows: [
@@ -821,7 +821,7 @@
                         { type: 'text', text: ' > 3.0;' }
                     ]
                 ],
-                chips: ['AVG(Tasso)', 'HAVING', 'WHERE', 'GROUP BY', 'SUM(Tasso)', 'COUNT(Numero)'],
+                chips: ['AVG(Tasso)', 'HAVING', 'WHERE', 'GROUP BY', 'AVG(Tasso)', 'COUNT(Numero)'],
                 resultOutput: {
                     columns: ["Banca", "AVG(Tasso)"],
                     rows: [
@@ -872,7 +872,7 @@
                         { type: 'text', text: ' > 20000;' }
                     ]
                 ],
-                chips: ['SUM(Valore)', 'WHERE', 'GROUP BY', 'HAVING', 'COUNT(ID)', 'AVG(Valore)'],
+                chips: ['SUM(Valore)', 'WHERE', 'GROUP BY', 'HAVING', 'COUNT(ID)', 'SUM(Valore)'],
                 resultOutput: {
                     columns: ["Filiale", "SUM(Valore)"],
                     rows: [
@@ -972,7 +972,7 @@
                         { type: 'text', text: ' > 1000;' }
                     ]
                 ],
-                chips: ['COUNT(ID)', 'AVG(Costo)', 'WHERE', 'GROUP BY', 'HAVING', 'SUM(Costo)'],
+                chips: ['COUNT(ID)', 'AVG(Costo)', 'WHERE', 'GROUP BY', 'HAVING', 'AVG(Costo)'],
                 resultOutput: {
                     columns: ["Dipartimento", "COUNT(ID)", "AVG(Costo)"],
                     rows: [
