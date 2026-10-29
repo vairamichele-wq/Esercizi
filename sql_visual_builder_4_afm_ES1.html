@@ -663,9 +663,9 @@
                 ],
                 chips: [
                     { val: 'INNER JOIN', type: 'keyword' },
+                    { val: 'JOIN', type: 'keyword' },
                     { val: 'ON', type: 'keyword' },
                     { val: 'WHERE', type: 'keyword' },
-                    { val: 'JOIN', type: 'keyword' },
                     { val: 'LEFT JOIN', type: 'keyword' },
                     { val: 'GROUP BY', type: 'keyword' },
                     { val: 'USING', type: 'keyword' },
@@ -698,6 +698,16 @@
             scoreEarned: 0,
             userQuery: ''
         }));
+
+        // Helper function to shuffle chips array randomly
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
 
         // Helper for element type styling
         function getPartColorClass(type) {
@@ -754,8 +764,8 @@
             // Render Query Builder & Slots (Vertical Line-by-Line Structure)
             renderQueryBuilder(quiz.lines);
 
-            // Render Chips
-            renderChips(quiz.chips);
+            // Render Chips (Shuffled randomly)
+            renderChips(shuffleArray(quiz.chips));
 
             // Hide feedback panel
             const fbPanel = document.getElementById('feedback-panel');
@@ -970,8 +980,15 @@
             slots.forEach(s => {
                 if (!slotState[s.id]) {
                     isComplete = false;
-                } else if (slotState[s.id].val !== s.correct) {
-                    isCorrect = false;
+                } else {
+                    const selectedVal = slotState[s.id].val;
+                    if (Array.isArray(s.correct)) {
+                        if (!s.correct.includes(selectedVal)) {
+                            isCorrect = false;
+                        }
+                    } else if (selectedVal !== s.correct) {
+                        isCorrect = false;
+                    }
                 }
             });
 
