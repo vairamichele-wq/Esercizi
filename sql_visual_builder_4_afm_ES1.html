@@ -657,7 +657,7 @@
                     [ { type: 'indent' }, { type: 'column', text: 'Clienti.RagioneSociale, Fatture.NumFattura' } ],
                     [ { type: 'keyword', text: 'FROM' } ],
                     [ { type: 'indent' }, { type: 'table', text: 'Clienti' } ],
-                    [ { type: 'slot', id: 's1', correct: 'INNER JOIN' }, { type: 'table', text: ' Fatture' } ],
+                    [ { type: 'slot', id: 's1', correct: ['INNER JOIN', 'JOIN'] }, { type: 'table', text: ' Fatture' } ],
                     [ { type: 'slot', id: 's2', correct: 'ON' } ],
                     [ { type: 'indent' }, { type: 'column', text: 'Clienti.IDCliente' }, { type: 'operator', text: ' =' }, { type: 'column', text: ' Fatture.IDCliente;' } ]
                 ],
