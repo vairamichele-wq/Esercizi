@@ -41,7 +41,7 @@
             transform: translateY(0);
         }
 
-        /* Scrollbar */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -57,7 +57,7 @@
             background: #475569;
         }
 
-        /* Stampa PDF / Google Classroom */
+        /* Print Styles */
         @media print {
             body {
                 background-color: #ffffff !important;
@@ -134,7 +134,7 @@
                 <span class="text-xs text-slate-400 uppercase font-semibold">Punteggio</span>
                 <span id="score-text" class="font-bold text-emerald-400 font-mono-code text-lg">0 pt</span>
             </div>
-            <!-- Pulsante Scorciatoia Report PDF (attivo a fine percorso) -->
+            <!-- Report PDF Button (Active on finish) -->
             <button onclick="showCompletionModal()" id="header-report-btn" class="hidden px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2" title="Vai al Report Finale">
                 <i class="fa-solid fa-print"></i>
                 <span>Report PDF</span>
@@ -959,6 +959,16 @@
         let totalScore = 0;
         let slotState = {};
 
+        // Helper function to shuffle array elements randomly
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
         // Initialize App
         window.onload = () => {
             loadQuestion(currentIdx);
@@ -977,7 +987,7 @@
             // Render UI
             renderTables(quiz.tables);
             renderQueryBuilder(quiz.queryTemplate);
-            renderChips(quiz.chips);
+            renderChips(shuffleArray(quiz.chips));
 
             // Reset Controls
             const fbPanel = document.getElementById('feedback-panel');
