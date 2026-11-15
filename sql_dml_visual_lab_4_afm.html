@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL DML Visual Lab - INSERT, UPDATE, DELETE (4ª AFM)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .slot-target {
+            min-width: 120px;
+            min-height: 42px;
+            transition: all 0.2s ease;
+        }
+        .slot-target.active {
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+        .chip {
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+        .chip:active {
+            transform: translateY(0);
+        }
+
+        /* Scrollbar Personalizzata */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Stampa PDF / Stampa Report Finale */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            header, footer, .no-print {
+                display: none !important;
+            }
+            main {
+                display: block !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-only-container {
+                border: 2px solid #1e293b !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+                border-radius: 12px !important;
+                padding: 24px !important;
+            }
+            .print-only-container * {
+                color: #000000 !important;
+                background: transparent !important;
+                border-color: #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+            .print-only-container h1, 
+            .print-only-container h2, 
+            .print-only-container h3, 
+            .print-only-container #cert-student-name {
+                color: #0f172a !important;
+            }
+            .print-only-container .bg-slate-900,
+            .print-only-container .bg-slate-950,
+            .print-only-container .bg-slate-900\/80 {
+                background-color: #f8fafc !important;
+                border-color: #cbd5e1 !important;
+            }
+            .print-only-container ul li {
+                border-color: #cbd5e1 !important;
+                background-color: #f1f5f9 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+    <!-- Header Navigazione -->
+    <header class="max-w-7xl w-full mx-auto bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl p-4 mb-6 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-3 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-database text-2xl"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg md:text-xl text-white tracking-wide">SQL DML Visual Lab</h1>
+                    <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-500/30 font-mono-code uppercase">10 Schede AFM</span>
+                </div>
+                <p class="text-xs text-slate-400">Laboratorio Grafico sulla Modifica dei Dati (INSERT INTO, UPDATE, DELETE FROM)</p>
+            </div>
+        </div>
+
+        <!-- Indicatori di Progresso e Punteggio -->
+        <div class="flex items-center space-x-3 flex-wrap">
+            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                <button id="prev-header-btn" onclick="prevQuestion()" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none" title="Scheda Precedente">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <div class="px-1 text-center">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block leading-none">Scheda</span>
+                    <span id="quiz-progress-text" class="font-bold text-indigo-400 font-mono-code text-base">1 / 10</span>
+                </div>
+                <button id="next-header-btn" onclick="nextQuestion()" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 disabled:pointer-events-none" title="Scheda Successiva">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400 uppercase font-semibold">Punteggio</span>
+                <span id="score-text" class="font-bold text-emerald-400 font-mono-code text-lg">0 pt</span>
+            </div>
+            <!-- Pulsante Report PDF (Disponibile a fine laboratorio) -->
+            <button onclick="showCompletionModal()" id="header-report-btn" class="hidden px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2" title="Vai al Report Finale">
+                <i class="fa-solid fa-print"></i>
+                <span>Report PDF</span>
+            </button>
+            <button onclick="resetCurrentQuiz()" class="p-2.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition" title="Ricomincia Scheda Corrente">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+
+        <!-- Barra di Navigazione Rapida tra le Schede -->
+        <div id="step-navigator" class="w-full pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
+            <!-- Pillole 1..10 generate dinamicamente -->
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <div id="workspace-view" class="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Column: Scenario Gestionale & Tabelle DB (5 Colonne) -->
+            <section class="lg:col-span-5 flex flex-col space-y-6">
+                
+                <!-- Scheda Scenario -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                        <div class="flex items-center space-x-2 text-indigo-400 font-semibold text-xs tracking-wider uppercase">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Obiettivo Operazione DML</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="solved-badge" class="hidden text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <i class="fa-solid fa-check mr-1"></i>Completata
+                            </span>
+                            <span id="op-badge" class="text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full border">INSERT</span>
+                        </div>
+                    </div>
+                    <h2 id="scenario-title" class="text-lg font-bold text-white mb-2">Caricamento in corso...</h2>
+                    <p id="scenario-desc" class="text-slate-300 text-sm leading-relaxed">...</p>
+                </div>
+
+                <!-- Preview Database del Problema -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2 text-slate-400 font-semibold text-xs tracking-wider uppercase">
+                            <i class="fa-solid fa-table text-indigo-400"></i>
+                            <span>Tabella Dati di Partenza</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono-code">PK = Key 🔑</span>
+                    </div>
+
+                    <!-- Contenitore Tabelle -->
+                    <div id="db-tables-container" class="space-y-4 overflow-y-auto max-h-[420px] pr-1">
+                        <!-- Tabelle generate dinamicamente -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Right Column: Editor Query SQL & Tasselli (7 Colonne) -->
+            <section class="lg:col-span-7 flex flex-col space-y-6">
+                
+                <!-- Box Editor SQL -->
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                    <!-- Header Editor & Legenda Sintassi -->
+                    <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                            <span class="ml-2 text-xs font-mono-code text-slate-400">modifica_dati.sql</span>
+                        </div>
+
+                        <!-- Legenda Colorazione SQL -->
+                        <div class="flex items-center space-x-3 text-[11px] font-mono-code bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
+                            <span class="flex items-center gap-1 text-indigo-400 font-bold"><span class="w-2 h-2 rounded-full bg-indigo-400"></span>Comando/Clausola</span>
+                            <span class="flex items-center gap-1 text-purple-300 font-bold"><span class="w-2 h-2 rounded-full bg-purple-400"></span>Tabella</span>
+                            <span class="flex items-center gap-1 text-amber-300 font-semibold"><span class="w-2 h-2 rounded-full bg-amber-300"></span>Campo</span>
+                        </div>
+                    </div>
+
+                    <!-- Area Righe di Sintassi della Query -->
+                    <div class="p-6 font-mono-code text-sm md:text-base leading-relaxed overflow-x-auto min-h-[220px] flex flex-col justify-center space-y-2 text-slate-200" id="query-builder-area">
+                        <!-- Righe e Slot generati dinamicamente -->
+                    </div>
+
+                    <!-- Barra Pulsanti Azione -->
+                    <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex items-center justify-between gap-4">
+                        <button onclick="clearAllSlots()" class="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Svuota Tasselli
+                        </button>
+                        <button id="verify-btn" onclick="verifyAnswer()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                            <i class="fa-solid fa-play"></i>
+                            Esegui Comando DML
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tavolozza Tasselli Disponibili -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-puzzle-piece text-indigo-400"></i>
+                            Tasselli Disponibili per la Scheda
+                        </h3>
+                        <span class="text-xs text-slate-500">Clicca un tassello per inserirlo nello spazio vuoto</span>
+                    </div>
+                    
+                    <div id="chips-palette" class="flex flex-wrap gap-2.5 min-h-[64px] p-3 bg-slate-950 rounded-xl border border-slate-800/80 items-center">
+                        <!-- Dynamic Chips -->
+                    </div>
+                </div>
+
+                <!-- Feedback e Risultato dell'Operazione DML -->
+                <div id="feedback-panel" class="hidden bg-slate-900 border rounded-2xl p-5 shadow-2xl transition-all">
+                    <div class="flex items-start space-x-3">
+                        <div id="feedback-icon" class="p-3 rounded-xl text-xl flex-shrink-0 mt-0.5"></div>
+                        <div class="flex-grow">
+                            <h4 id="feedback-title" class="font-bold text-lg mb-1"></h4>
+                            <p id="feedback-text" class="text-sm text-slate-300 leading-relaxed mb-3"></p>
+                            
+                            <!-- Stato Tabella dopo l'esecuzione -->
+                            <div id="result-table-box" class="hidden mt-4">
+                                <h5 class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-2">
+                                    <i class="fa-solid fa-table-cells"></i>
+                                    Stato della Tabella dopo l'Esecuzione (Anteprima Risultato)
+                                </h5>
+                                <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                                    <table class="w-full text-left text-xs text-slate-300">
+                                        <thead class="bg-slate-900 text-indigo-300 uppercase font-mono-code text-[11px]" id="result-table-head"></thead>
+                                        <tbody class="divide-y divide-slate-800/80 font-mono-code" id="result-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Pulsanti Navigazione -->
+                            <div class="mt-5 flex items-center justify-between gap-3 flex-wrap">
+                                <button id="prev-btn" onclick="prevQuestion()" class="hidden px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 transition items-center gap-2 text-sm">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                    <span>Scheda Precedente</span>
+                                </button>
+                                <button id="next-btn" onclick="nextQuestion()" class="hidden ml-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition items-center gap-2 text-sm">
+                                    <span>Prossima Scheda</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+        <!-- Vista Report Finale (Nascosta durante gli esercizi) -->
+        <div id="completion-view" class="hidden col-span-12 max-w-4xl mx-auto w-full my-4 md:my-8"></div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl w-full mx-auto mt-6 text-center text-xs text-slate-500 py-3 border-t border-slate-800/60">
+        SQL DML Visual Lab — Percorso Didattico sulle Istruzioni INSERT, UPDATE e DELETE per la classe 4ª AFM
+    </footer>
+
+    <!-- Sintetizzatore Audio Web API per Effetti Sonori -->
+    <script>
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.22);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(190, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch (e) {}
+        };
+    </script>
+
+    <!-- Data e Logica Applicativa (10 Schede Didattiche SQL DML: INSERT, UPDATE, DELETE) -->
+    <script>
+        const dmlQuizData = [
+            {
+                id: 1,
+                opType: "INSERT",
+                title: "1. Inserire una Nuova Categoria Merceologica (INSERT INTO)",
+                desc: "L'azienda amplia il catalogo inserendo una nuova categoria di articoli: codice 8 e descrizione 'Cancelleria' nella tabella Categoria.",
+                tables: [
+                    {
+                        name: "Categoria",
+                        columns: ["ID Categoria (PK 🔑)", "Descrizione"],
+                        rows: [
+                            [1, "Elettronica"],
+                            [2, "Abbigliamento"],
+                            [6, "Software"],
+                            [7, "Libri"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'slot', id: 's1', correct: 'INSERT INTO' },
+                        { type: 'table', text: 'Categoria' },
+                        { type: 'text', text: ' ("ID Categoria", Descrizione)' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'VALUES' },
+                        { type: 'text', text: ' (8, ' },
+                        { type: 'slot', id: 's3', correct: "'Cancelleria'" },
+                        { type: 'text', text: ');' }
+                    ]
+                ],
+                chips: ['INSERT INTO', 'VALUES', "'Cancelleria'", 'UPDATE', 'SET', 'Cancelleria'],
+                resultOutput: {
+                    columns: ["ID Categoria (PK)", "Descrizione"],
+                    rows: [
+                        { cells: [1, "Elettronica"], status: "normal" },
+                        { cells: [2, "Abbigliamento"], status: "normal" },
+                        { cells: [6, "Software"], status: "normal" },
+                        { cells: [7, "Libri"], status: "normal" },
+                        { cells: [8, "Cancelleria"], status: "inserted" }
+                    ]
+                },
+                explanation: "Perfetto! La clausola INSERT INTO specifica la tabella e le colonne di destinazione, mentre VALUES fornisce i valori nell'esatto ordine dichiarato (i testi vanno sempre racchiusi tra apici singoli)."
+            },
+            {
+                id: 2,
+                opType: "INSERT",
+                title: "2. Registrare un Nuovo Cliente con Chiave Esterna (INSERT INTO)",
+                desc: "Aggiungere nella tabella Clienti il nuovo cliente 'C108' ('Future Lab SRL', città 'Milano', settore 'Software') assegnandogli livello di affidabilità 1 ('Molto alta').",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["ID Cliente (PK 🔑)", "Nome cliente", "Città", "Settore", "ID Affidabilità (FK 🔗)"],
+                        rows: [
+                            ["C001", "Alfa SRL", "Milano", "Industria", 1],
+                            ["C106", "Aura Moda S.r.l.", "Perugia", "Abbigliamento", 2],
+                            ["C107", "Nova Digital S.p.A.", "Ancona", "Elettronica", 1]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'INSERT INTO' },
+                        { type: 'table', text: 'Clienti' },
+                        { type: 'text', text: ' ("ID Cliente", "Nome cliente", Città, Settore, "ID Affidabilità")' }
+                    ],
+                    [
+                        { type: 'slot', id: 's1', correct: 'VALUES' },
+                        { type: 'text', text: ' (' },
+                        { type: 'slot', id: 's2', correct: "'C108'" },
+                        { type: 'text', text: ", 'Future Lab SRL', 'Milano', 'Software', " },
+                        { type: 'slot', id: 's3', correct: '1' },
+                        { type: 'text', text: ');' }
+                    ]
+                ],
+                chips: ['VALUES', "'C108'", '1', 'SET', "'C001'", '99'],
+                resultOutput: {
+                    columns: ["ID Cliente (PK)", "Nome cliente", "Città", "Settore", "ID Affidabilità (FK)"],
+                    rows: [
+                        { cells: ["C001", "Alfa SRL", "Milano", "Industria", 1], status: "normal" },
+                        { cells: ["C106", "Aura Moda S.r.l.", "Perugia", "Abbigliamento", 2], status: "normal" },
+                        { cells: ["C107", "Nova Digital S.p.A.", "Ancona", "Elettronica", 1], status: "normal" },
+                        { cells: ["C108", "Future Lab SRL", "Milano", "Software", 1], status: "inserted" }
+                    ]
+                },
+                explanation: "Ottimo! Hai rispettato sia l'univocità della chiave primaria ('C108' non era presente) sia il vincolo di integrità referenziale usando un 'ID Affidabilità' valido (1)."
+            },
+            {
+                id: 3,
+                opType: "INSERT",
+                title: "3. Registrare una Nuova Vendita (Chiave Primaria Composta)",
+                desc: "Inserire nella tabella Vendite la transazione 'V111' del '2026-03-15' effettuata dal cliente 'C001' per 2 unità del prodotto 'P004', pagata con 'Bonifico'.",
+                tables: [
+                    {
+                        name: "Vendite",
+                        columns: ["ID Vendita (PK 🔑)", "Data", "ID Cliente (PK/FK)", "ID Prodotto (PK/FK)", "Quantità", "Metodo_Pagamento"],
+                        rows: [
+                            ["V109", "2025-11-23", "C006", "P003", 3, "Contanti"],
+                            ["V110", "2025-11-25", "C003", "P004", 1, "Bonifico"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'slot', id: 's1', correct: 'INSERT INTO' },
+                        { type: 'table', text: 'Vendite' },
+                        { type: 'text', text: ' ("ID Vendita", Data, "ID Cliente", "ID Prodotto", Quantità, Metodo_Pagamento)' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'VALUES' },
+                        { type: 'text', text: " ('V111', '2026-03-15', " },
+                        { type: 'slot', id: 's2', correct: "'C001'" },
+                        { type: 'text', text: ", 'P004', " },
+                        { type: 'slot', id: 's3', correct: '2' },
+                        { type: 'text', text: ", 'Bonifico');" }
+                    ]
+                ],
+                chips: ['INSERT INTO', "'C001'", '2', 'UPDATE', "'2'", 'WHERE'],
+                resultOutput: {
+                    columns: ["ID Vendita", "Data", "ID Cliente", "ID Prodotto", "Quantità", "Metodo_Pagamento"],
+                    rows: [
+                        { cells: ["V109", "2025-11-23", "C006", "P003", 3, "Contanti"], status: "normal" },
+                        { cells: ["V110", "2025-11-25", "C003", "P004", 1, "Bonifico"], status: "normal" },
+                        { cells: ["V111", "2026-03-15", "C001", "P004", 2, "Bonifico"], status: "inserted" }
+                    ]
+                },
+                explanation: "Bravissimo! Nella tabella Vendite tutte e tre le colonne della chiave primaria composta (ID Vendita, ID Cliente, ID Prodotto) devono essere valorizzate."
+            },
+            {
+                id: 4,
+                opType: "UPDATE",
+                title: "4. Aggiornare l'Email di un Singolo Cliente (UPDATE e WHERE)",
+                desc: "Il cliente 'Delta SRL' (ID Cliente 'C004') ha comunicato il nuovo indirizzo email 'info@deltasrl.it'. Aggiornare il solo record corrispondente nella tabella Clienti.",
+                tables: [
+                    {
+                        name: "Clienti",
+                        columns: ["ID Cliente (PK 🔑)", "Nome cliente", "Città", "Email"],
+                        rows: [
+                            ["C001", "Alfa SRL", "Milano", "info@alfa.com"],
+                            ["C003", "Gamma SNC", "Torino", "info@gamma.com"],
+                            ["C004", "Delta SRL", "Napoli", "NULL"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'slot', id: 's1', correct: 'UPDATE' },
+                        { type: 'table', text: 'Clienti' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'SET' },
+                        { type: 'column', text: 'Email' },
+                        { type: 'text', text: " = 'info@deltasrl.it'" }
+                    ],
+                    [
+                        { type: 'slot', id: 's3', correct: 'WHERE' },
+                        { type: 'column', text: '"ID Cliente"' },
+                        { type: 'text', text: " = 'C004';" }
+                    ]
+                ],
+                chips: ['UPDATE', 'SET', 'WHERE', 'INSERT INTO', 'HAVING', 'VALUES'],
+                resultOutput: {
+                    columns: ["ID Cliente (PK)", "Nome cliente", "Città", "Email"],
+                    rows: [
+                        { cells: ["C001", "Alfa SRL", "Milano", "info@alfa.com"], status: "normal" },
+                        { cells: ["C003", "Gamma SNC", "Torino", "info@gamma.com"], status: "normal" },
+                        { cells: ["C004", "Delta SRL", "Napoli", "info@deltasrl.it"], status: "updated" }
+                    ]
+                },
+                explanation: "Esatto! La sintassi standard di aggiornamento richiede UPDATE [Tabella], SET [Colonna = Valore] e la clausola WHERE per isolare il record 'C004'."
+            },
+            {
+                id: 5,
+                opType: "UPDATE",
+                title: "5. Modificare Prezzo e Costo di un Prodotto (UPDATE Multi-Colonna)",
+                desc: "Aggiornare contemporaneamente il Prezzo a 89.90 e il Costo a 52.00 per l'articolo 'Disco esterno da 1 TB' ('P001') nella tabella Prodotti.",
+                tables: [
+                    {
+                        name: "Prodotti",
+                        columns: ["ID Prodotto (PK 🔑)", "Nome Prodotto", "Prezzo", "Costo"],
+                        rows: [
+                            ["P001", "Disco esterno da 1 TB", "85.00 €", "50.00 €"],
+                            ["P002", "Pantaloni Jogging", "39.90 €", "18.00 €"],
+                            ["P004", "Cuffie Sony WH-CH720N", "99.00 €", "60.00 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'UPDATE' },
+                        { type: 'table', text: 'Prodotti' }
+                    ],
+                    [
+                        { type: 'slot', id: 's1', correct: 'SET' },
+                        { type: 'column', text: 'Prezzo' },
+                        { type: 'text', text: ' = 89.90, ' },
+                        { type: 'column', text: 'Costo' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's2', correct: '52.00' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: '"ID Prodotto"' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's3', correct: "'P001'" },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['SET', '52.00', "'P001'", 'VALUES', 'P001', 'AND'],
+                resultOutput: {
+                    columns: ["ID Prodotto (PK)", "Nome Prodotto", "Prezzo", "Costo"],
+                    rows: [
+                        { cells: ["P001", "Disco esterno da 1 TB", "89.90 €", "52.00 €"], status: "updated" },
+                        { cells: ["P002", "Pantaloni Jogging", "39.90 €", "18.00 €"], status: "normal" },
+                        { cells: ["P004", "Cuffie Sony WH-CH720N", "99.00 €", "60.00 €"], status: "normal" }
+                    ]
+                },
+                explanation: "Ottimo lavoro! Nella clausola SET è possibile aggiornare più colonne in un solo comando separandole con una virgola."
+            },
+            {
+                id: 6,
+                opType: "UPDATE",
+                title: "6. Aumento Percentuale del Listino per Categoria (UPDATE con Calcolo)",
+                desc: "Aumentare del 10% (moltiplicando Prezzo per 1.10) il listino di tutti i prodotti appartenenti alla categoria Elettronica (ID Categoria = 1).",
+                tables: [
+                    {
+                        name: "Prodotti",
+                        columns: ["ID Prodotto (PK 🔑)", "Nome Prodotto", "ID Categoria (FK 🔗)", "Prezzo"],
+                        rows: [
+                            ["P001", "Disco esterno da 1 TB", 1, "80.00 €"],
+                            ["P002", "Pantaloni Jogging", 2, "40.00 €"],
+                            ["P004", "Cuffie Sony WH-CH720N", 1, "100.00 €"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'UPDATE' },
+                        { type: 'table', text: 'Prodotti' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'SET' },
+                        { type: 'column', text: 'Prezzo' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's1', correct: 'Prezzo * 1.10' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: '"ID Categoria"' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's3', correct: '1' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['Prezzo * 1.10', 'WHERE', '1', 'HAVING', 'Prezzo + 10', "'Elettronica'"],
+                resultOutput: {
+                    columns: ["ID Prodotto (PK)", "Nome Prodotto", "ID Categoria (FK)", "Prezzo"],
+                    rows: [
+                        { cells: ["P001", "Disco esterno da 1 TB", 1, "88.00 €"], status: "updated" },
+                        { cells: ["P002", "Pantaloni Jogging", 2, "40.00 €"], status: "normal" },
+                        { cells: ["P004", "Cuffie Sony WH-CH720N", 1, "110.00 €"], status: "updated" }
+                    ]
+                },
+                explanation: "Impeccabile! L'istruzione UPDATE consente di calcolare il nuovo valore partendo dal valore precedente della colonna (Prezzo * 1.10) filtrando per chiave esterna."
+            },
+            {
+                id: 7,
+                opType: "UPDATE",
+                title: "7. Applicare Sconto Promozionale su Condizione Composta (UPDATE e AND)",
+                desc: "Impostare lo Sconto a 0.15 (15%) per tutte le vendite pagate tramite 'Bonifico' che hanno una Quantità maggiore o uguale a 5.",
+                tables: [
+                    {
+                        name: "Vendite",
+                        columns: ["ID Vendita (PK 🔑)", "ID Cliente", "Quantità", "Sconto", "Metodo_Pagamento"],
+                        rows: [
+                            ["V001", "C001", 2, "0.00", "Bonifico"],
+                            ["V002", "C002", 6, "0.05", "Carta"],
+                            ["V015", "C001", 8, "0.00", "Bonifico"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'UPDATE' },
+                        { type: 'table', text: 'Vendite' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'SET' },
+                        { type: 'column', text: 'Sconto' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's1', correct: '0.15' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: 'Metodo_Pagamento' },
+                        { type: 'text', text: " = 'Bonifico' " },
+                        { type: 'slot', id: 's2', correct: 'AND' },
+                        { type: 'column', text: 'Quantità' },
+                        { type: 'text', text: ' >= 5;' }
+                    ]
+                ],
+                chips: ['0.15', 'AND', 'OR', '15%', 'SET', 'GROUP BY'],
+                resultOutput: {
+                    columns: ["ID Vendita", "ID Cliente", "Quantità", "Sconto", "Metodo_Pagamento"],
+                    rows: [
+                        { cells: ["V001", "C001", 2, "0.00", "Bonifico"], status: "normal" },
+                        { cells: ["V002", "C002", 6, "0.05", "Carta"], status: "normal" },
+                        { cells: ["V015", "C001", 8, "0.15", "Bonifico"], status: "updated" }
+                    ]
+                },
+                explanation: "Perfetto! L'operatore logico AND garantisce che vengano aggiornate soltanto le righe che soddisfano contemporaneamente entrambe le condizioni."
+            },
+            {
+                id: 8,
+                opType: "DELETE",
+                title: "8. Eliminare una Categoria Non Utilizzata (DELETE FROM)",
+                desc: "Rimuovere definitivamente dalla tabella Categoria la voce 'Libri' (ID Categoria = 7), che non ha alcun prodotto collegato.",
+                tables: [
+                    {
+                        name: "Categoria",
+                        columns: ["ID Categoria (PK 🔑)", "Descrizione"],
+                        rows: [
+                            [1, "Elettronica"],
+                            [2, "Abbigliamento"],
+                            [6, "Software"],
+                            [7, "Libri"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'slot', id: 's1', correct: 'DELETE FROM' },
+                        { type: 'table', text: 'Categoria' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: '"ID Categoria"' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's3', correct: '7' },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['DELETE FROM', 'WHERE', '7', 'DROP TABLE', 'UPDATE', "'Libri'"],
+                resultOutput: {
+                    columns: ["ID Categoria (PK)", "Descrizione"],
+                    rows: [
+                        { cells: [1, "Elettronica"], status: "normal" },
+                        { cells: [2, "Abbigliamento"], status: "normal" },
+                        { cells: [6, "Software"], status: "normal" }
+                    ]
+                },
+                explanation: "Eccellente! DELETE FROM rimuove le righe selezionate dalla clausola WHERE. Poiché nessun prodotto puntava a ID Categoria = 7, il vincolo di integrità referenziale è rispettato."
+            },
+            {
+                id: 9,
+                opType: "DELETE",
+                title: "9. Cancellare una Riga di Vendita Errata (Chiave Composta)",
+                desc: "Eliminare dalla tabella Vendite la registrazione duplicata identificata da ID Vendita = 'V110', ID Cliente = 'C003' e ID Prodotto = 'P004'.",
+                tables: [
+                    {
+                        name: "Vendite",
+                        columns: ["ID Vendita (PK 🔑)", "Data", "ID Cliente (PK)", "ID Prodotto (PK)", "Quantità"],
+                        rows: [
+                            ["V108", "2025-11-21", "C002", "P006", 2],
+                            ["V109", "2025-11-23", "C006", "P003", 3],
+                            ["V110", "2025-11-25", "C003", "P004", 1]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'keyword', text: 'DELETE FROM' },
+                        { type: 'table', text: 'Vendite' }
+                    ],
+                    [
+                        { type: 'keyword', text: 'WHERE' },
+                        { type: 'column', text: '"ID Vendita"' },
+                        { type: 'text', text: " = 'V110' " },
+                        { type: 'slot', id: 's1', correct: 'AND' },
+                        { type: 'column', text: '"ID Cliente"' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's2', correct: "'C003'" }
+                    ],
+                    [
+                        { type: 'slot', id: 's3', correct: 'AND' },
+                        { type: 'column', text: '"ID Prodotto"' },
+                        { type: 'text', text: " = 'P004';" }
+                    ]
+                ],
+                chips: ['AND', "'C003'", 'AND', 'OR', 'WHERE', "'V110'"],
+                resultOutput: {
+                    columns: ["ID Vendita", "Data", "ID Cliente", "ID Prodotto", "Quantità"],
+                    rows: [
+                        { cells: ["V108", "2025-11-21", "C002", "P006", 2], status: "normal" },
+                        { cells: ["V109", "2025-11-23", "C006", "P003", 3], status: "normal" }
+                    ]
+                },
+                explanation: "Bravissimo! Quando una tabella ha una chiave primaria composta da più colonne, occorre specificarle tutte in AND per eliminare con precisione il singolo record."
+            },
+            {
+                id: 10,
+                opType: "DELETE",
+                title: "10. Pulizia Mirata Transazioni Annullate (DELETE con Filtro Multiplo)",
+                desc: "Eliminare dalla tabella Vendite tutte le vendite registrate per il cliente 'C006' con metodo di pagamento 'Contanti'.",
+                tables: [
+                    {
+                        name: "Vendite",
+                        columns: ["ID Vendita (PK 🔑)", "Data", "ID Cliente", "ID Prodotto", "Metodo_Pagamento"],
+                        rows: [
+                            ["V099", "2025-10-25", "C006", "P001", "Contanti"],
+                            ["V101", "2025-10-31", "C002", "P001", "Carta"],
+                            ["V109", "2025-11-23", "C006", "P003", "Contanti"],
+                            ["V112", "2025-11-28", "C006", "P004", "Bonifico"]
+                        ]
+                    }
+                ],
+                queryTemplate: [
+                    [
+                        { type: 'slot', id: 's1', correct: 'DELETE FROM' },
+                        { type: 'table', text: 'Vendite' }
+                    ],
+                    [
+                        { type: 'slot', id: 's2', correct: 'WHERE' },
+                        { type: 'column', text: '"ID Cliente"' },
+                        { type: 'text', text: " = 'C006' " },
+                        { type: 'slot', id: 's3', correct: 'AND' },
+                        { type: 'column', text: 'Metodo_Pagamento' },
+                        { type: 'text', text: ' = ' },
+                        { type: 'slot', id: 's4', correct: "'Contanti'" },
+                        { type: 'text', text: ';' }
+                    ]
+                ],
+                chips: ['DELETE FROM', 'WHERE', 'AND', "'Contanti'", 'OR', 'UPDATE'],
+                resultOutput: {
+                    columns: ["ID Vendita", "Data", "ID Cliente", "ID Prodotto", "Metodo_Pagamento"],
+                    rows: [
+                        { cells: ["V101", "2025-10-31", "C002", "P001", "Carta"], status: "normal" },
+                        { cells: ["V112", "2025-11-28", "C006", "P004", "Bonifico"], status: "normal" }
+                    ]
+                },
+                explanation: "Complimenti! Hai completato tutte le 10 schede sulle istruzioni DML! Hai dimostrato piena padronanza di INSERT INTO, UPDATE e DELETE FROM e dei vincoli relazionali."
+            }
+        ];
+
+        // Stato Globale dell'Applicazione
+        let currentIdx = 0;
+        let maxReachedIdx = 0;
+        let totalScore = 0;
+        let slotState = {};
+
+        // Inizializzazione Applicazione
+        window.onload = () => {
+            loadQuestion(currentIdx);
+        };
+
+        function loadQuestion(idx, isReset = false) {
+            currentIdx = idx;
+            if (idx > maxReachedIdx) {
+                maxReachedIdx = idx;
+            }
+
+            // Mostra area esercizi e nasconde eventuale schermata report
+            document.getElementById('workspace-view').classList.remove('hidden');
+            document.getElementById('completion-view').classList.add('hidden');
+
+            const quiz = dmlQuizData[idx];
+            slotState = {};
+
+            // Aggiornamenti Testate e Scenario
+            document.getElementById('quiz-progress-text').innerText = `${idx + 1} / ${dmlQuizData.length}`;
+            document.getElementById('score-text').innerText = `${totalScore} pt`;
+            document.getElementById('scenario-title').innerText = quiz.title;
+            document.getElementById('scenario-desc').innerText = quiz.desc;
+
+            // Stato pulsanti header Indietro / Avanti
+            const prevHeaderBtn = document.getElementById('prev-header-btn');
+            const nextHeaderBtn = document.getElementById('next-header-btn');
+            if (prevHeaderBtn) prevHeaderBtn.disabled = (idx === 0);
+            if (nextHeaderBtn) nextHeaderBtn.disabled = (idx >= maxReachedIdx && !quiz.solved);
+
+            // Badge Operazione DML
+            const opBadge = document.getElementById('op-badge');
+            opBadge.innerText = quiz.opType;
+            if (quiz.opType === 'INSERT') {
+                opBadge.className = 'text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+            } else if (quiz.opType === 'UPDATE') {
+                opBadge.className = 'text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full border bg-amber-500/20 text-amber-300 border-amber-500/30';
+            } else {
+                opBadge.className = 'text-[10px] font-mono-code font-bold px-2.5 py-0.5 rounded-full border bg-rose-500/20 text-rose-300 border-rose-500/30';
+            }
+
+            // Render Interfaccia Grafica
+            renderTables(quiz.tables);
+            renderQueryBuilder(quiz.queryTemplate);
+            renderChips(quiz.chips);
+            renderStepNavigator();
+
+            const solvedBadge = document.getElementById('solved-badge');
+            const fbPanel = document.getElementById('feedback-panel');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const resultBox = document.getElementById('result-table-box');
+
+            // Se la scheda è già stata completata e non è stato richiesto il reset, ripristina la soluzione per la revisione
+            if (quiz.solved && !isReset) {
+                if (solvedBadge) solvedBadge.classList.remove('hidden');
+
+                const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+                slots.forEach(s => {
+                    const savedVal = (quiz.savedSlotState && quiz.savedSlotState[s.id])
+                        ? quiz.savedSlotState[s.id]
+                        : (Array.isArray(s.correct) ? s.correct[0] : s.correct);
+                    fillSlot(s.id, savedVal);
+                });
+
+                showSolvedFeedback(quiz);
+            } else {
+                if (solvedBadge) solvedBadge.classList.add('hidden');
+                fbPanel.classList.add('hidden');
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                resultBox.classList.add('hidden');
+            }
+        }
+
+        function renderStepNavigator() {
+            const nav = document.getElementById('step-navigator');
+            if (!nav) return;
+
+            const isReportOpen = !document.getElementById('completion-view').classList.contains('hidden');
+
+            let html = `<span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mr-1"><i class="fa-solid fa-clock-rotate-left text-indigo-400 mr-1.5"></i>Revisione Schede:</span><div class="flex items-center gap-1.5 flex-wrap">`;
+
+            dmlQuizData.forEach((item, i) => {
+                const isCurrent = (!isReportOpen && i === currentIdx);
+                const isAccessible = item.solved || i <= maxReachedIdx;
+
+                let btnClass = 'px-2.5 py-1 rounded-lg font-mono-code text-xs font-bold border transition flex items-center gap-1 ';
+                if (isCurrent) {
+                    btnClass += 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/30';
+                } else if (item.solved) {
+                    btnClass += 'bg-emerald-950/60 text-emerald-300 border-emerald-600/40 hover:bg-emerald-900/60 cursor-pointer';
+                } else if (isAccessible) {
+                    btnClass += 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 cursor-pointer';
+                } else {
+                    btnClass += 'bg-slate-950/60 text-slate-600 border-slate-800/60 cursor-not-allowed opacity-50';
+                }
+
+                const icon = item.solved ? '<i class="fa-solid fa-check text-[10px]"></i>' : '';
+                html += `<button onclick="goToQuestion(${i})" ${isAccessible ? '' : 'disabled'} class="${btnClass}" title="${item.title}">${icon}<span>${i + 1}</span></button>`;
+            });
+
+            html += `</div>`;
+            nav.innerHTML = html;
+        }
+
+        function goToQuestion(idx) {
+            if (idx < 0 || idx >= dmlQuizData.length) return;
+            const target = dmlQuizData[idx];
+            if (target.solved || idx <= maxReachedIdx) {
+                loadQuestion(idx);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentIdx > 0) {
+                loadQuestion(currentIdx - 1);
+            }
+        }
+
+        function renderTables(tables) {
+            const container = document.getElementById('db-tables-container');
+            container.innerHTML = '';
+
+            tables.forEach((table) => {
+                const box = document.createElement('div');
+                box.className = 'bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-md';
+
+                let tableHtml = `
+                    <div class="bg-slate-900/90 px-3.5 py-2 border-b border-slate-800 flex justify-between items-center border-l-4 border-indigo-500">
+                        <span class="font-mono-code text-xs font-bold text-slate-200">${table.name}</span>
+                        <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-mono-code">${table.rows.length} record</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-900 text-slate-400 uppercase font-mono-code text-[10px] border-b border-slate-800">
+                                <tr>
+                                    ${table.columns.map(col => {
+                                        if (col.includes('PK') || col.includes('🔑')) {
+                                            return `<th class="px-3 py-2 text-amber-300 font-bold bg-amber-500/10 border-r border-slate-800/60">${col}</th>`;
+                                        }
+                                        return `<th class="px-3 py-2 border-r border-slate-800/60">${col}</th>`;
+                                    }).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 font-mono-code">
+                `;
+
+                table.rows.forEach((row) => {
+                    tableHtml += `<tr class="hover:bg-slate-800/40 transition">`;
+                    row.forEach((cell, cellIdx) => {
+                        const colName = table.columns[cellIdx] || '';
+                        let cellStyle = 'px-3 py-2 border-r border-slate-800/40';
+                        if (colName.includes('PK') || colName.includes('🔑')) cellStyle += ' text-amber-200/90 font-bold';
+
+                        tableHtml += `<td class="${cellStyle}">${cell}</td>`;
+                    });
+                    tableHtml += `</tr>`;
+                });
+
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>`;
+                box.innerHTML = tableHtml;
+                container.appendChild(box);
+            });
+        }
+
+        function renderQueryBuilder(templateLines) {
+            const container = document.getElementById('query-builder-area');
+            container.innerHTML = '';
+
+            templateLines.forEach(lineTokens => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'w-full flex items-center flex-wrap gap-2 py-1.5 border-b border-slate-800/40 last:border-b-0';
+
+                lineTokens.forEach(part => {
+                    if (part.type === 'indent') {
+                        const indentSpan = document.createElement('span');
+                        indentSpan.className = 'w-6 inline-block flex-shrink-0';
+                        lineDiv.appendChild(indentSpan);
+                    } else if (part.type === 'keyword') {
+                        const span = document.createElement('span');
+                        span.className = 'text-indigo-400 font-bold';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'table') {
+                        const span = document.createElement('span');
+                        span.className = 'text-purple-300 font-bold bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'column') {
+                        const span = document.createElement('span');
+                        span.className = 'text-amber-300 font-semibold font-mono-code';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'text') {
+                        const span = document.createElement('span');
+                        span.className = 'text-slate-200';
+                        span.innerText = part.text;
+                        lineDiv.appendChild(span);
+                    } else if (part.type === 'slot') {
+                        const slot = document.createElement('div');
+                        slot.id = 'slot-' + part.id;
+                        slot.dataset.slotId = part.id;
+                        slot.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/90 text-slate-400 cursor-pointer text-xs font-bold hover:border-indigo-500 transition shadow-inner';
+                        
+                        slot.innerHTML = '<span class="text-xs text-slate-500 italic"><i class="fa-solid fa-plus text-[10px] mr-1"></i>Scegli</span>';
+                        slot.onclick = () => onSlotClick(part.id);
+                        lineDiv.appendChild(slot);
+                    }
+                });
+
+                container.appendChild(lineDiv);
+            });
+        }
+
+        function shuffleChips(chips) {
+            const shuffled = [...chips];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function renderChips(chips) {
+            const palette = document.getElementById('chips-palette');
+            palette.innerHTML = '';
+
+            const randomizedChips = shuffleChips(chips);
+
+            randomizedChips.forEach((chipVal, i) => {
+                const chip = document.createElement('div');
+                chip.id = `chip-${i}`;
+                chip.className = 'chip px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono-code font-bold text-xs shadow-md border border-indigo-400/30 flex items-center gap-1.5';
+                chip.innerText = chipVal;
+                
+                chip.onclick = () => onChipClick(chipVal);
+                palette.appendChild(chip);
+            });
+        }
+
+        function onChipClick(val) {
+            const quiz = dmlQuizData[currentIdx];
+            const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+
+            const emptySlot = slots.find(s => !slotState[s.id]);
+            if (emptySlot) {
+                fillSlot(emptySlot.id, val);
+            }
+        }
+
+        function onSlotClick(slotId) {
+            if (slotState[slotId]) {
+                clearSlot(slotId);
+            }
+        }
+
+        function fillSlot(slotId, val) {
+            slotState[slotId] = val;
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-mono-code font-bold text-xs shadow-lg border border-indigo-400 transition';
+            slotElem.innerHTML = `<span>${val}</span> <i class="fa-solid fa-xmark text-xs ml-2 text-indigo-200 hover:text-white"></i>`;
+
+            updateChipsVisuals();
+        }
+
+        function clearSlot(slotId) {
+            delete slotState[slotId];
+            const slotElem = document.getElementById(`slot-${slotId}`);
+            slotElem.className = 'slot-target inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/90 text-slate-400 cursor-pointer text-xs font-bold hover:border-indigo-500 transition shadow-inner';
+            slotElem.innerHTML = `<span class="text-xs text-slate-500 italic"><i class="fa-solid fa-plus text-[10px] mr-1"></i>Scegli</span>`;
+
+            updateChipsVisuals();
+        }
+
+        function clearAllSlots() {
+            slotState = {};
+            const quiz = dmlQuizData[currentIdx];
+            quiz.queryTemplate.flat().filter(p => p.type === 'slot').forEach(s => {
+                clearSlot(s.id);
+            });
+        }
+
+        function updateChipsVisuals() {
+            const usedValues = Object.values(slotState);
+            const palette = document.getElementById('chips-palette');
+            const chipsElems = palette.children;
+
+            const usedCounts = {};
+            usedValues.forEach(v => usedCounts[v] = (usedCounts[v] || 0) + 1);
+
+            const currentCounts = {};
+            Array.from(chipsElems).forEach(chip => {
+                const val = chip.innerText.trim();
+                currentCounts[val] = (currentCounts[val] || 0) + 1;
+                
+                if (usedCounts[val] && usedCounts[val] >= currentCounts[val]) {
+                    chip.classList.add('opacity-30', 'pointer-events-none', 'scale-95');
+                } else {
+                    chip.classList.remove('opacity-30', 'pointer-events-none', 'scale-95');
+                }
+            });
+        }
+
+        function verifyAnswer() {
+            const quiz = dmlQuizData[currentIdx];
+            const slots = quiz.queryTemplate.flat().filter(p => p.type === 'slot');
+
+            let isComplete = true;
+            let isCorrect = true;
+
+            slots.forEach(s => {
+                if (!slotState[s.id]) {
+                    isComplete = false;
+                } else {
+                    const userVal = slotState[s.id];
+                    if (Array.isArray(s.correct)) {
+                        if (!s.correct.includes(userVal)) isCorrect = false;
+                    } else if (userVal !== s.correct) {
+                        isCorrect = false;
+                    }
+                }
+            });
+
+            const fbPanel = document.getElementById('feedback-panel');
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbTitle = document.getElementById('feedback-title');
+            const fbText = document.getElementById('feedback-text');
+            const resultBox = document.getElementById('result-table-box');
+            const nextBtn = document.getElementById('next-btn');
+
+            fbPanel.classList.remove('hidden');
+
+            if (!isComplete) {
+                playSound('error');
+                fbPanel.className = 'bg-amber-950/40 border border-amber-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                fbTitle.className = 'font-bold text-lg text-amber-300 mb-1';
+                fbTitle.innerText = 'Sintassi Incompleta';
+                fbText.innerText = 'Riempi tutti i tasselli mancanti nel comando SQL prima di eseguirlo!';
+                resultBox.classList.add('hidden');
+                document.getElementById('prev-btn').classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                return;
+            }
+
+            if (isCorrect) {
+                playSound('success');
+
+                quiz.savedSlotState = { ...slotState };
+
+                if (!quiz.solved) {
+                    quiz.solved = true;
+                    totalScore += 20;
+                    document.getElementById('score-text').innerText = `${totalScore} pt`;
+                }
+
+                const solvedBadge = document.getElementById('solved-badge');
+                if (solvedBadge) solvedBadge.classList.remove('hidden');
+
+                const nextHeaderBtn = document.getElementById('next-header-btn');
+                if (nextHeaderBtn) nextHeaderBtn.disabled = false;
+
+                renderStepNavigator();
+                showSolvedFeedback(quiz);
+            } else {
+                playSound('error');
+                fbPanel.className = 'bg-rose-950/40 border border-rose-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+                fbIcon.className = 'p-3 rounded-xl bg-rose-500/20 text-rose-400 text-xl flex-shrink-0';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                fbTitle.className = 'font-bold text-lg text-rose-300 mb-1';
+                fbTitle.innerText = 'Errore nella Sintassi o nella Logica DML';
+                fbText.innerText = 'Uno o più tasselli selezionati non sono corretti (controlla parole chiave SQL, apici sulle stringhe, condizioni WHERE o vincoli di chiave). Riprova!';
+                resultBox.classList.add('hidden');
+                document.getElementById('prev-btn').classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function showSolvedFeedback(quiz) {
+            const fbPanel = document.getElementById('feedback-panel');
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbTitle = document.getElementById('feedback-title');
+            const fbText = document.getElementById('feedback-text');
+            const resultBox = document.getElementById('result-table-box');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            fbPanel.classList.remove('hidden');
+            fbPanel.className = 'bg-emerald-950/40 border border-emerald-600/50 rounded-2xl p-5 shadow-2xl transition-all';
+            fbIcon.className = 'p-3 rounded-xl bg-emerald-500/20 text-emerald-400 text-xl flex-shrink-0';
+            fbIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            fbTitle.className = 'font-bold text-lg text-emerald-300 mb-1';
+            fbTitle.innerText = 'Comando DML Corretto ed Eseguito con Successo!';
+            fbText.innerText = quiz.explanation;
+
+            renderResultTable(quiz.resultOutput);
+            resultBox.classList.remove('hidden');
+
+            if (currentIdx > 0) {
+                prevBtn.classList.remove('hidden');
+                prevBtn.classList.add('flex');
+            } else {
+                prevBtn.classList.add('hidden');
+                prevBtn.classList.remove('flex');
+            }
+
+            if (currentIdx === dmlQuizData.length - 1) {
+                nextBtn.innerHTML = `<span>Visualizza Report Finale e Stampa PDF</span> <i class="fa-solid fa-print"></i>`;
+                nextBtn.className = "ml-auto px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 text-sm animate-pulse";
+                
+                const headerReportBtn = document.getElementById('header-report-btn');
+                if (headerReportBtn) headerReportBtn.classList.remove('hidden');
+            } else {
+                nextBtn.innerHTML = `<span>Prossima Scheda</span> <i class="fa-solid fa-arrow-right"></i>`;
+                nextBtn.className = "ml-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center gap-2 text-sm";
+            }
+
+            nextBtn.classList.remove('hidden');
+            nextBtn.classList.add('flex');
+        }
+
+        function renderResultTable(output) {
+            const head = document.getElementById('result-table-head');
+            const body = document.getElementById('result-table-body');
+
+            head.innerHTML = `<tr>${output.columns.map(c => `<th class="px-3 py-2 border-b border-slate-800">${c}</th>`).join('')}</tr>`;
+            
+            body.innerHTML = output.rows.map(rowObj => {
+                let rowClass = 'hover:bg-slate-900/60';
+                let textClass = 'text-slate-300';
+
+                if (rowObj.status === 'inserted') {
+                    rowClass = 'bg-emerald-500/15 hover:bg-emerald-500/20';
+                    textClass = 'text-emerald-300 font-bold';
+                } else if (rowObj.status === 'updated') {
+                    rowClass = 'bg-amber-500/15 hover:bg-amber-500/20';
+                    textClass = 'text-amber-300 font-bold';
+                }
+
+                return `
+                    <tr class="${rowClass}">
+                        ${rowObj.cells.map(cell => `<td class="px-3 py-2 ${textClass}">${cell}</td>`).join('')}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function nextQuestion() {
+            if (currentIdx < dmlQuizData.length - 1) {
+                loadQuestion(currentIdx + 1);
+            } else {
+                showCompletionModal();
+            }
+        }
+
+        function resetCurrentQuiz() {
+            loadQuestion(currentIdx, true);
+        }
+
+        function showCompletionModal() {
+            const currentDate = new Date().toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            document.getElementById('workspace-view').classList.add('hidden');
+            const completionView = document.getElementById('completion-view');
+            completionView.classList.remove('hidden');
+            renderStepNavigator();
+
+            completionView.innerHTML = `
+                <!-- Form Dati Studente (Nascosto durante la stampa) -->
+                <div class="no-print bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl mb-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="bg-emerald-500/20 text-emerald-400 p-3 rounded-xl border border-emerald-500/30">
+                            <i class="fa-solid fa-file-signature text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Generazione Report per Google Classroom</h2>
+                            <p class="text-xs text-slate-400">Compila i tuoi dati personali per generare la scheda di consegna ufficiale ed esportare il PDF.</p>
+                        </div>
+                    </div>
+
+                    <!-- Avviso Campi Obbligatori -->
+                    <div id="print-warning" class="hidden mb-4 p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-circle-exclamation text-rose-400 text-sm"></i>
+                        <span>Compila sia il Nome che il Cognome prima di stampare il report!</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome Studente *</label>
+                            <input type="text" id="student-firstname" placeholder="Es. Mario" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Cognome Studente *</label>
+                            <input type="text" id="student-lastname" placeholder="Es. Rossi" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Classe</label>
+                            <input type="text" id="student-class" value="4ª AFM" oninput="updateCertificate()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800 pt-4">
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <button onclick="loadQuestion(currentIdx)" class="px-4 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-xl transition flex items-center gap-2">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Torna a Rivedere le Schede
+                            </button>
+                            <button onclick="window.location.reload()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                Ricomincia Laboratorio
+                            </button>
+                        </div>
+                        <button onclick="printReport()" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                            <i class="fa-solid fa-print"></i>
+                            Stampa / Salva in PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scheda Report Ufficiale da Stampare -->
+                <div id="printable-certificate" class="print-only-container bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
+                    <div class="border-4 border-indigo-500/30 rounded-2xl p-6 md:p-8 bg-slate-950/60">
+                        
+                        <!-- Header Report -->
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-6 mb-6">
+                            <div>
+                                <span class="text-xs font-mono-code uppercase font-bold text-indigo-400 tracking-widest block mb-1">Indirizzo Amministrazione, Finanza e Marketing</span>
+                                <h1 class="text-xl md:text-2xl font-bold text-white tracking-tight">Report Valutazione SQL DML Lab (INSERT, UPDATE, DELETE)</h1>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block font-mono-code">Data Consegna:</span>
+                                <span class="text-sm font-bold text-slate-200 font-mono-code">${currentDate}</span>
+                            </div>
+                        </div>
+
+                        <!-- Dati Studente e Esito -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 bg-slate-900/80 p-5 rounded-xl border border-slate-800">
+                            <div class="space-y-2">
+                                <div class="text-xs text-slate-400 uppercase font-semibold">Candidato / Studente:</div>
+                                <div id="cert-student-name" class="text-xl font-bold text-amber-300 tracking-wide">___ ___</div>
+                                <div class="text-xs text-slate-400">Classe: <span id="cert-student-class" class="text-slate-200 font-bold">4ª AFM</span></div>
+                            </div>
+                            <div class="space-y-2 md:text-right border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-6">
+                                <div class="text-xs text-slate-400 uppercase font-semibold">Punteggio Totale Conseguito:</div>
+                                <div class="text-3xl font-bold text-emerald-400 font-mono-code">${totalScore} / ${dmlQuizData.length * 20} pt</div>
+                                <div class="text-xs text-slate-300">Schede Completate: <span class="text-emerald-400 font-bold">10 / 10 (100%)</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Riepilogo Competenze Verificate -->
+                        <div class="mb-8">
+                            <h3 class="text-xs uppercase font-semibold text-slate-400 tracking-wider mb-3">Competenze Verificate sulla Modifica dei Dati SQL:</h3>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono-code text-slate-300">
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    1. INSERT INTO (Inserimento record base)
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    2. INSERT INTO con Chiave Esterna (FK)
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    3. INSERT INTO con Chiave Primaria Composta
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    4. UPDATE + SET + WHERE su Chiave Primaria
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    5. UPDATE Multi-Colonna simultaneo
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    6. UPDATE con Calcolo Percentuale e Filtro FK
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    7. UPDATE con Condizione Composta (AND)
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    8. DELETE FROM + WHERE (Integrità Referenziale)
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    9. DELETE FROM su Chiave Primaria Composta
+                                </li>
+                                <li class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                                    <i class="fa-solid fa-check text-emerald-400"></i>
+                                    10. DELETE FROM Mirato con Filtro Multiplo
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Blocchi Firme per Consegna -->
+                        <div class="grid grid-cols-2 gap-8 pt-8 border-t border-slate-800 text-center">
+                            <div>
+                                <div class="h-10 border-b border-dashed border-slate-600 mb-2"></div>
+                                <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Firma dello Studente</span>
+                            </div>
+                            <div>
+                                <div class="h-10 border-b border-dashed border-slate-600 mb-2"></div>
+                                <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Firma del Docente</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateCertificate() {
+            const fname = document.getElementById('student-firstname')?.value.trim() || '';
+            const lname = document.getElementById('student-lastname')?.value.trim() || '';
+            const sclass = document.getElementById('student-class')?.value.trim() || '4ª AFM';
+
+            const nameElem = document.getElementById('cert-student-name');
+            const classElem = document.getElementById('cert-student-class');
+
+            if (nameElem) {
+                nameElem.innerText = (fname || lname) ? `${fname} ${lname}`.toUpperCase() : '___ ___';
+            }
+            if (classElem) {
+                classElem.innerText = sclass || '4ª AFM';
+            }
+        }
+
+        function printReport() {
+            const fname = document.getElementById('student-firstname')?.value.trim();
+            const lname = document.getElementById('student-lastname')?.value.trim();
+            const warningBox = document.getElementById('print-warning');
+
+            if (!fname || !lname) {
+                if (warningBox) warningBox.classList.remove('hidden');
+                return;
+            }
+
+            if (warningBox) warningBox.classList.add('hidden');
+            window.print();
+        }
+    </script>
+</body>
+</html>
